@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { TextInput, Button, Chip, IconButton, Card } from 'react-native-paper';
+import React, { useCallback, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Chip, IconButton, TextInput } from 'react-native-paper';
+import { ThemedCard } from './ThemedCard';
 
 interface Hashtag {
   id: string;
@@ -47,6 +48,7 @@ const TONE_COLORS: { [key: string]: string } = {
 };
 
 export default function DreamList() {
+  const theme = useAppTheme();
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
@@ -133,16 +135,17 @@ export default function DreamList() {
     const isExpanded = expandedIndex === index;
     const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
     const toneColor = TONE_COLORS[dream.overallTone || 'neutral'];
+    const chipTextStyle = { color: theme.text };
 
     return (
-      <Card key={index} style={[styles.dreamCard, { borderLeftColor: toneColor, borderLeftWidth: 4 }]}>
-        <Card.Content>
+      <ThemedCard key={index} style={[styles.dreamCard, { borderLeftColor: toneColor, borderLeftWidth: 4 }]}>
+        <View style={{ padding: 16 }}>
           {/* En-tête */}
           <View style={styles.cardHeader}>
             <View style={styles.headerLeft}>
-              <Text style={styles.dreamIcon}>{dreamIcon}</Text>
+              <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
               <View>
-                <Text style={styles.dreamDate}>
+                <Text style={[styles.dreamDate, { color: theme.text }]}>
                   {new Date(dream.todayDate).toLocaleDateString('fr-FR', {
                     weekday: 'short',
                     day: 'numeric',
@@ -151,7 +154,7 @@ export default function DreamList() {
                   })}
                 </Text>
                 {dream.location && (
-                  <Text style={styles.dreamLocation}>📍 {dream.location}</Text>
+                  <Text style={[styles.dreamLocation, { color: theme.text }]}>📍 {dream.location}</Text>
                 )}
               </View>
             </View>
@@ -160,11 +163,13 @@ export default function DreamList() {
                 icon={isExpanded ? 'chevron-up' : 'chevron-down'}
                 size={24}
                 onPress={() => toggleExpand(index)}
+                iconColor={theme.text}
               />
               <IconButton
                 icon="pencil"
                 size={20}
                 onPress={() => startEditing(index)}
+                iconColor={theme.text}
               />
               <IconButton
                 icon="delete"
@@ -175,20 +180,20 @@ export default function DreamList() {
             </View>
           </View>
 
-          {/* Texte du rêve - CORRECTION ICI */}
-          <Text style={styles.dreamText} numberOfLines={isExpanded ? undefined : 3}>
+          {/* Texte du rêve */}
+          <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={isExpanded ? undefined : 3}>
             {dream.dreamText}
           </Text>
 
           {/* Métadonnées rapides */}
           <View style={styles.quickMeta}>
             {dream.emotionalIntensity && (
-              <Chip icon="lightning-bolt" compact style={styles.metaChip} textStyle={{ color: '#1a1a1a' }}>
+              <Chip icon="lightning-bolt" compact style={styles.metaChip} textStyle={chipTextStyle}>
                 Intensité: {dream.emotionalIntensity}/10
               </Chip>
             )}
             {dream.clarity && (
-              <Chip icon="eye" compact style={styles.metaChip} textStyle={{ color: '#1a1a1a' }}>
+              <Chip icon="eye" compact style={styles.metaChip} textStyle={chipTextStyle}>
                 Clarté: {dream.clarity}/10
               </Chip>
             )}
@@ -196,22 +201,22 @@ export default function DreamList() {
 
           {/* Détails expandables */}
           {isExpanded && (
-            <View style={styles.expandedContent}>
+            <View style={[styles.expandedContent, { borderTopColor: theme.border }]}>
               {/* Personnages */}
               {dream.characters && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>👥 Personnages:</Text>
-                  <Text style={styles.detailText}>{dream.characters}</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>👥 Personnages:</Text>
+                  <Text style={[styles.detailText, { color: theme.text }]}>{dream.characters}</Text>
                 </View>
               )}
 
               {/* Émotions avant */}
               {dream.emotionBefore && dream.emotionBefore.length > 0 && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>😴 Avant le rêve:</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>😴 Avant le rêve:</Text>
                   <View style={styles.emotionChips}>
                     {dream.emotionBefore.map((emotion, i) => (
-                      <Chip key={i} compact style={styles.emotionChip} textStyle={{ color: '#1a1a1a' }}>
+                      <Chip key={i} compact style={styles.emotionChip} textStyle={chipTextStyle}>
                         {emotion}
                       </Chip>
                     ))}
@@ -222,10 +227,10 @@ export default function DreamList() {
               {/* Émotions après */}
               {dream.emotionAfter && dream.emotionAfter.length > 0 && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>😊 Après le rêve:</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>😊 Après le rêve:</Text>
                   <View style={styles.emotionChips}>
                     {dream.emotionAfter.map((emotion, i) => (
-                      <Chip key={i} compact style={styles.emotionChip} textStyle={{ color: '#1a1a1a' }}>
+                      <Chip key={i} compact style={styles.emotionChip} textStyle={chipTextStyle}>
                         {emotion}
                       </Chip>
                     ))}
@@ -236,18 +241,18 @@ export default function DreamList() {
               {/* Qualité du sommeil */}
               {dream.sleepQuality && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>😴 Sommeil:</Text>
-                  <Text style={styles.detailText}>{dream.sleepQuality}</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>😴 Sommeil:</Text>
+                  <Text style={[styles.detailText, { color: theme.text }]}>{dream.sleepQuality}</Text>
                 </View>
               )}
 
               {/* Mots-clés */}
               {dream.keywords && dream.keywords.length > 0 && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>🏷️ Mots-clés:</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>🏷️ Mots-clés:</Text>
                   <View style={styles.emotionChips}>
                     {dream.keywords.map((keyword, i) => (
-                      <Chip key={i} compact style={styles.keywordChip} textStyle={{ color: '#1a1a1a' }}>
+                      <Chip key={i} compact style={styles.keywordChip} textStyle={chipTextStyle}>
                         {keyword}
                       </Chip>
                     ))}
@@ -258,8 +263,8 @@ export default function DreamList() {
               {/* Signification personnelle */}
               {dream.personalMeaning && (
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>💭 Signification:</Text>
-                  <Text style={styles.detailText}>{dream.personalMeaning}</Text>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>💭 Signification:</Text>
+                  <Text style={[styles.detailText, { color: theme.text }]}>{dream.personalMeaning}</Text>
                 </View>
               )}
             </View>
@@ -268,28 +273,31 @@ export default function DreamList() {
           {/* Hashtags */}
           <View style={styles.hashtagsContainer}>
             {dream.hashtags?.hashtag1?.label && (
-              <Chip compact style={styles.hashtag} textStyle={{ color: '#1a1a1a' }}>#{dream.hashtags.hashtag1.label}</Chip>
+              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag1.label}</Chip>
             )}
             {dream.hashtags?.hashtag2?.label && (
-              <Chip compact style={styles.hashtag} textStyle={{ color: '#1a1a1a' }}>#{dream.hashtags.hashtag2.label}</Chip>
+              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag2.label}</Chip>
             )}
             {dream.hashtags?.hashtag3?.label && (
-              <Chip compact style={styles.hashtag} textStyle={{ color: '#1a1a1a' }}>#{dream.hashtags.hashtag3.label}</Chip>
+              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag3.label}</Chip>
             )}
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
     );
   };
 
   return (
     <>
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={[styles.scrollContainer, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.contentContainer}
+      >
         {dreams.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🌙</Text>
-            <Text style={styles.emptyText}>Aucun rêve enregistré</Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptyText, { color: theme.text }]}>Aucun rêve enregistré</Text>
+            <Text style={[styles.emptySubtext, { color: theme.text }]}>
               Allez dans l'onglet "Nouveau Rêve" pour commencer votre journal
             </Text>
           </View>
@@ -306,8 +314,8 @@ export default function DreamList() {
         onRequestClose={cancelEdit}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Modifier le rêve</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Modifier le rêve</Text>
             <ScrollView>
               {editingDream && (
                 <>
@@ -318,15 +326,14 @@ export default function DreamList() {
                     mode="outlined"
                     multiline
                     numberOfLines={6}
-                    style={styles.modalInput}
-                    outlineColor="#d0d0d0"
-                    activeOutlineColor="#2196F3"
-                    textColor="#000000"
-                    placeholderTextColor="#757575"
+                    style={[styles.modalInput, { backgroundColor: theme.card }]}
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.accent}
+                    textColor={theme.text}
                     theme={{
                       colors: {
-                        background: '#ffffff',
-                        onSurfaceVariant: '#000000',
+                        background: theme.card,
+                        onSurfaceVariant: theme.text,
                       }
                     }}
                   />
@@ -335,15 +342,14 @@ export default function DreamList() {
                     value={editingDream.location || ''}
                     onChangeText={(text) => setEditingDream({ ...editingDream, location: text })}
                     mode="outlined"
-                    style={styles.modalInput}
-                    outlineColor="#d0d0d0"
-                    activeOutlineColor="#2196F3"
-                    textColor="#000000"
-                    placeholderTextColor="#757575"
+                    style={[styles.modalInput, { backgroundColor: theme.card }]}
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.accent}
+                    textColor={theme.text}
                     theme={{
                       colors: {
-                        background: '#ffffff',
-                        onSurfaceVariant: '#000000',
+                        background: theme.card,
+                        onSurfaceVariant: theme.text,
                       }
                     }}
                   />
@@ -352,15 +358,14 @@ export default function DreamList() {
                     value={editingDream.characters || ''}
                     onChangeText={(text) => setEditingDream({ ...editingDream, characters: text })}
                     mode="outlined"
-                    style={styles.modalInput}
-                    outlineColor="#d0d0d0"
-                    activeOutlineColor="#2196F3"
-                    textColor="#000000"
-                    placeholderTextColor="#757575"
+                    style={[styles.modalInput, { backgroundColor: theme.card }]}
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.accent}
+                    textColor={theme.text}
                     theme={{
                       colors: {
-                        background: '#ffffff',
-                        onSurfaceVariant: '#000000',
+                        background: theme.card,
+                        onSurfaceVariant: theme.text,
                       }
                     }}
                   />
@@ -371,15 +376,14 @@ export default function DreamList() {
                     mode="outlined"
                     multiline
                     numberOfLines={4}
-                    style={styles.modalInput}
-                    outlineColor="#d0d0d0"
-                    activeOutlineColor="#2196F3"
-                    textColor="#000000"
-                    placeholderTextColor="#757575"
+                    style={[styles.modalInput, { backgroundColor: theme.card }]}
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.accent}
+                    textColor={theme.text}
                     theme={{
                       colors: {
-                        background: '#ffffff',
-                        onSurfaceVariant: '#000000',
+                        background: theme.card,
+                        onSurfaceVariant: theme.text,
                       }
                     }}
                   />
@@ -404,15 +408,12 @@ export default function DreamList() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   contentContainer: {
     padding: 16,
   },
   dreamCard: {
     marginBottom: 16,
-    elevation: 2,
-    backgroundColor: '#ffffff',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -436,17 +437,15 @@ const styles = StyleSheet.create({
   dreamDate: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1a1a1a',
   },
   dreamLocation: {
     fontSize: 12,
-    color: '#4a5568',
     marginTop: 2,
+    opacity: 0.7,
   },
   dreamText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#1a1a1a',
     marginBottom: 12,
   },
   quickMeta: {
@@ -456,13 +455,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metaChip: {
-    backgroundColor: '#e3f2fd',
+    opacity: 0.8,
   },
   expandedContent: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
   detailSection: {
     marginBottom: 12,
@@ -470,13 +468,12 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#2c3e50',
     marginBottom: 6,
   },
   detailText: {
     fontSize: 14,
-    color: '#1a1a1a', 
     lineHeight: 20,
+    opacity: 0.9,
   },
   emotionChips: {
     flexDirection: 'row',
@@ -484,10 +481,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emotionChip: {
-    backgroundColor: '#fff3e0',
+    opacity: 0.8,
   },
   keywordChip: {
-    backgroundColor: '#f3e5f5',
+    opacity: 0.8,
   },
   hashtagsContainer: {
     flexDirection: 'row',
@@ -496,7 +493,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   hashtag: {
-    backgroundColor: '#e0f2f1',
+    opacity: 0.8,
   },
   emptyState: {
     alignItems: 'center',
@@ -510,12 +507,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#4a5568',
+    opacity: 0.7,
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -526,7 +522,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     maxHeight: '80%',
@@ -535,11 +530,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#1a1a1a',
   },
   modalInput: {
     marginBottom: 12,
-    backgroundColor: '#ffffff',
   },
   modalButtons: {
     flexDirection: 'row',

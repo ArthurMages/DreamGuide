@@ -1,13 +1,12 @@
-import { ScrollView, StyleSheet } from 'react-native';
-// Vérifiez que le fichier existe : components/NotificationSettings.tsx
-// Si le fichier s'appelle NotificationSetting.tsx, changez l'import
 import NotificationSettings from '@/components/NotificationSettings';
+import { ThemedScreen } from '@/components/ThemedScreen';
+import { StyleSheet } from 'react-native';
 
 export default function SettingsScreen() {
   return (
-    <ScrollView style={[styles.container, { backgroundColor: '#fff' }]}>
+    <ThemedScreen>
       <NotificationSettings />
-    </ScrollView>
+    </ThemedScreen>
   );
 }
 

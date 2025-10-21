@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Keyboard,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Platform,
-  Alert,
-} from 'react-native';
-import { TextInput, Button, Checkbox, Chip, SegmentedButtons, Text } from 'react-native-paper';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { Button, Chip, SegmentedButtons, Text, TextInput, useTheme } from 'react-native-paper';
 
 const DREAM_TYPES = [
   { label: '💭 Ordinaire', value: 'ordinary' },
@@ -29,6 +30,9 @@ const findHashtagIdByLabel = async (label: string): Promise<string> => {
 };
 
 export default function DreamForm() {
+  const theme = useAppTheme();
+  const paperTheme = useTheme();
+
   // Champs existants
   const [dreamText, setDreamText] = useState('');
   const [hashtag1, setHashtag1] = useState('');
@@ -129,20 +133,22 @@ export default function DreamForm() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={[{ flex: 1 }, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-          
+        <ScrollView
+          style={[styles.container, { backgroundColor: theme.background }]}
+          contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.background }]}>
+
           {/* Date et heure */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📅 Date du rêve</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 Date du rêve</Text>
             <Button mode="outlined" onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
-              {dreamDate.toLocaleDateString('fr-FR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+              {dreamDate.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -163,7 +169,7 @@ export default function DreamForm() {
 
           {/* Type de rêve */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🌟 Type de rêve</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🌟 Type de rêve</Text>
             <SegmentedButtons
               value={dreamType}
               onValueChange={setDreamType}
@@ -174,7 +180,7 @@ export default function DreamForm() {
 
           {/* Description */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📝 Description du rêve</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>📝 Description du rêve</Text>
             <TextInput
               value={dreamText}
               onChangeText={setDreamText}
@@ -183,14 +189,14 @@ export default function DreamForm() {
               numberOfLines={6}
               placeholder="Décrivez votre rêve en détail..."
               style={styles.textArea}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               theme={{
                 colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
+                  background: theme.surface,
+                  onSurfaceVariant: theme.text,
                 }
               }}
             />
@@ -205,14 +211,14 @@ export default function DreamForm() {
               mode="outlined"
               placeholder="Ex: Maison d'enfance, forêt, ville inconnue..."
               style={styles.input}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               theme={{
                 colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
+                  background: theme.surface,
+                  onSurfaceVariant: theme.text,
                 }
               }}
             />
@@ -227,14 +233,14 @@ export default function DreamForm() {
               mode="outlined"
               placeholder="Ex: Maman, ami d'enfance, inconnu..."
               style={styles.input}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               theme={{
                 colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
+                  background: theme.surface,
+                  onSurfaceVariant: theme.text,
                 }
               }}
             />
@@ -242,16 +248,16 @@ export default function DreamForm() {
 
           {/* Émotions avant */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>😴 État émotionnel avant le rêve</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>😴 État émotionnel avant le rêve</Text>
             <View style={styles.chipContainer}>
               {EMOTIONS.map(emotion => (
                 <Chip
                   key={emotion}
                   selected={emotionBefore.includes(emotion)}
                   onPress={() => toggleEmotion(emotion, 'before')}
-                  style={styles.chip}
+                  style={[styles.chip, { backgroundColor: theme.surface }]}
                   mode="outlined"
-                  textStyle={{ color: '#1a1a1a' }}
+                  textStyle={{ color: theme.text }}
                 >
                   {emotion}
                 </Chip>
@@ -261,16 +267,16 @@ export default function DreamForm() {
 
           {/* Émotions après */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>😊 État émotionnel après le rêve</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>😊 État émotionnel après le rêve</Text>
             <View style={styles.chipContainer}>
               {EMOTIONS.map(emotion => (
                 <Chip
                   key={emotion}
                   selected={emotionAfter.includes(emotion)}
                   onPress={() => toggleEmotion(emotion, 'after')}
-                  style={styles.chip}
+                  style={[styles.chip, { backgroundColor: theme.surface }]}
                   mode="outlined"
-                  textStyle={{ color: '#1a1a1a' }}
+                  textStyle={{ color: theme.text }}
                 >
                   {emotion}
                 </Chip>
@@ -280,7 +286,7 @@ export default function DreamForm() {
 
           {/* Intensité émotionnelle */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💫 Intensité émotionnelle: {emotionalIntensity}/10</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>💫 Intensité émotionnelle: {emotionalIntensity}/10</Text>
             <TextInput
               value={emotionalIntensity}
               onChangeText={setEmotionalIntensity}
@@ -303,7 +309,7 @@ export default function DreamForm() {
 
           {/* Clarté */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔍 Clarté du rêve: {clarity}/10</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🔍 Clarté du rêve: {clarity}/10</Text>
             <TextInput
               value={clarity}
               onChangeText={setClarity}
@@ -326,7 +332,7 @@ export default function DreamForm() {
 
           {/* Tonalité globale */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎭 Tonalité globale</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🎭 Tonalité globale</Text>
             <SegmentedButtons
               value={overallTone}
               onValueChange={setOverallTone}
@@ -340,7 +346,7 @@ export default function DreamForm() {
 
           {/* Qualité du sommeil */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>😴 Qualité du sommeil</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>😴 Qualité du sommeil</Text>
             <SegmentedButtons
               value={sleepQuality}
               onValueChange={setSleepQuality}
@@ -372,7 +378,7 @@ export default function DreamForm() {
 
           {/* Hashtags existants */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>#️⃣ Hashtags</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>#️⃣ Hashtags</Text>
             <TextInput
               label="Hashtag 1"
               value={hashtag1}
@@ -428,23 +434,23 @@ export default function DreamForm() {
 
           {/* Signification personnelle */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💭 Signification personnelle</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>💭 Signification personnelle</Text>
             <TextInput
               value={personalMeaning}
               onChangeText={setPersonalMeaning}
               mode="outlined"
               multiline
               numberOfLines={4}
-              placeholder="Que pensez-vous que ce rêve signifie pour vous ?"
+              placeholder="Décrivez votre rêve en détail..."
               style={styles.textArea}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               theme={{
                 colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
+                  background: theme.surface,
+                  onSurfaceVariant: theme.text,
                 }
               }}
             />
@@ -468,7 +474,6 @@ export default function DreamForm() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   contentContainer: {
     padding: 16,
@@ -481,19 +486,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#1a1a1a',
   },
   input: {
     marginBottom: 8,
-    backgroundColor: '#ffffff',
   },
   textArea: {
     marginBottom: 8,
-    backgroundColor: '#ffffff',
   },
   dateButton: {
     marginBottom: 8,
-    backgroundColor: '#ffffff',
   },
   segmentedButtons: {
     marginBottom: 8,
@@ -505,7 +506,6 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginBottom: 8,
-    backgroundColor: '#ffffff',
   },
   submitButton: {
     marginTop: 16,

@@ -1,5 +1,4 @@
-import ThemeProvider from '@/components/ThemeProvider';
-import { useThemeStore } from '@/store/themeStore';
+import ThemeProvider from '@/theme/ThemeProvider';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -40,11 +39,62 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { theme } = useThemeStore();
+  const appTheme = useAppTheme();
+
+  const paperTheme = theme === 'dark'
+    ? {
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: appTheme.accent,
+        background: appTheme.background,
+        surface: appTheme.surface,
+        text: appTheme.text,
+        onSurface: appTheme.text,
+        backdrop: appTheme.background,
+      },
+      dark: true,
+    }
+    : {
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: appTheme.accent,
+        background: appTheme.background,
+        surface: appTheme.surface,
+        text: appTheme.text,
+        onSurface: appTheme.text,
+        backdrop: appTheme.background,
+      },
+      dark: false,
+    };
+
+  const navigationTheme = theme === 'dark'
+    ? {
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: appTheme.background,
+        text: appTheme.text,
+        border: appTheme.border,
+        card: appTheme.card,
+      },
+    }
+    : {
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        background: appTheme.background,
+        text: appTheme.text,
+        border: appTheme.border,
+        card: appTheme.card,
+      },
+    };
 
   return (
     <ThemeProvider>
-      <PaperProvider>
-        <NavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
+      <PaperProvider theme={paperTheme}>
+        <NavigationThemeProvider value={navigationTheme}>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>

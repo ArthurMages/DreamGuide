@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Platform } from 'react-native';
-import { Card, Text, Switch, Button, Divider, TextInput } from 'react-native-paper';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Button, Divider, Switch, Text, TextInput, useTheme } from 'react-native-paper';
+import { ThemedCard } from './ThemedCard';
 
 // Configuration des notifications
 Notifications.setNotificationHandler({
@@ -26,6 +28,8 @@ interface NotificationSettings {
 }
 
 export default function NotificationSettings() {
+  const theme = useAppTheme();
+  const paperTheme = useTheme();
   const [settings, setSettings] = useState<NotificationSettings>({
     enabled: false,
     morningTime: '08:00',
@@ -58,7 +62,7 @@ export default function NotificationSettings() {
     try {
       await AsyncStorage.setItem('notificationSettings', JSON.stringify(newSettings));
       setSettings(newSettings);
-      
+
       // Réorganiser les notifications
       if (newSettings.enabled) {
         await scheduleNotifications(newSettings);
@@ -74,12 +78,12 @@ export default function NotificationSettings() {
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      
+
       if (finalStatus !== 'granted') {
         Alert.alert(
           'Permissions requises',
@@ -111,10 +115,11 @@ export default function NotificationSettings() {
             sound: true,
           },
           trigger: {
+            type: Platform.OS === 'ios' ? 'calendar' : 'daily',
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any, // Nécessaire pour contourner les limitations de type
         });
       }
 
@@ -128,10 +133,11 @@ export default function NotificationSettings() {
             sound: true,
           },
           trigger: {
+            type: Platform.OS === 'ios' ? 'calendar' : 'daily',
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any, // Nécessaire pour contourner les limitations de type
         });
       }
 
@@ -187,34 +193,38 @@ export default function NotificationSettings() {
         body: 'Vos notifications fonctionnent correctement !',
         sound: true,
       },
-      trigger: { seconds: 2 },
+      trigger: {
+        type: Platform.OS === 'ios' ? 'calendar' : 'seconds',
+        seconds: 2,
+        repeats: false,
+      } as any, // Nécessaire pour contourner les limitations de type
     });
     Alert.alert('Test envoyé', 'Vous recevrez une notification dans 2 secondes');
   };
 
   return (
-    <View style={styles.container}>
-      <Card style={styles.card}>
-        <Card.Content>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ThemedCard style={styles.card}>
+        <View style={{ padding: 16 }}>
           <View style={styles.header}>
-            <Text style={styles.title}>🔔 Notifications et Rappels</Text>
+            <Text variant="titleLarge" style={{ color: theme.text }}>⚙️ Notifications</Text>
             <Switch
               value={settings.enabled}
               onValueChange={toggleNotifications}
             />
           </View>
-          <Text style={styles.description}>
-            Recevez des rappels quotidiens pour enregistrer vos rêves
-          </Text>
-
-          {settings.enabled && (
+          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+          <Text style={[styles.description, { color: theme.text }]}>
+            Configurez les rappels pour ne pas oublier de noter vos rêves
+            au réveil et avant de dormir.
+          </Text>          {settings.enabled && (
             <>
               <Divider style={styles.divider} />
 
               {/* Rappel du matin */}
               <View style={styles.timeSection}>
                 <View style={styles.timeSectionHeader}>
-                  <Text style={styles.timeLabel}>☀️ Rappel du matin</Text>
+                  <Text style={[styles.timeLabel, { color: theme.text }]}>☀️ Rappel du matin</Text>
                   <Switch
                     value={settings.morningEnabled}
                     onValueChange={(value) =>
@@ -228,6 +238,7 @@ export default function NotificationSettings() {
                       mode="outlined"
                       onPress={() => setShowMorningPicker(true)}
                       style={styles.timeButton}
+                      textColor={theme.text}
                     >
                       {settings.morningTime}
                     </Button>
@@ -248,7 +259,7 @@ export default function NotificationSettings() {
               {/* Rappel du soir */}
               <View style={styles.timeSection}>
                 <View style={styles.timeSectionHeader}>
-                  <Text style={styles.timeLabel}>🌙 Rappel du soir</Text>
+                  <Text style={[styles.timeLabel, { color: theme.text }]}>🌙 Rappel du soir</Text>
                   <Switch
                     value={settings.eveningEnabled}
                     onValueChange={(value) =>
@@ -262,6 +273,7 @@ export default function NotificationSettings() {
                       mode="outlined"
                       onPress={() => setShowEveningPicker(true)}
                       style={styles.timeButton}
+                      textColor={theme.text}
                     >
                       {settings.eveningTime}
                     </Button>
@@ -281,7 +293,7 @@ export default function NotificationSettings() {
 
               {/* Message personnalisé */}
               <View style={styles.messageSection}>
-                <Text style={styles.timeLabel}>💬 Message de rappel</Text>
+                <Text style={[styles.timeLabel, { color: theme.text }]}>💬 Message de rappel</Text>
                 <TextInput
                   value={settings.reminderText}
                   onChangeText={(text) =>
@@ -292,6 +304,8 @@ export default function NotificationSettings() {
                   numberOfLines={2}
                   style={styles.messageInput}
                   onBlur={() => saveSettings(settings)}
+                  textColor={theme.text}
+                  theme={paperTheme}
                 />
               </View>
 
@@ -303,44 +317,45 @@ export default function NotificationSettings() {
                 onPress={testNotification}
                 style={styles.testButton}
                 icon="bell-ring"
+                textColor={theme.text}
               >
                 Tester les notifications
               </Button>
             </>
           )}
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text style={styles.infoTitle}>ℹ️ Conseils</Text>
-          <Text style={styles.infoText}>
+      <ThemedCard style={styles.card}>
+        <View style={{ padding: 16 }}>
+          <Text style={[styles.infoTitle, { color: theme.text }]}>ℹ️ Conseils</Text>
+          <Text style={[styles.infoText, { color: theme.text }]}>
             • Programmez un rappel le matin pour noter vos rêves au réveil{'\n'}
             • Le rappel du soir peut vous aider à vous préparer mentalement{'\n'}
             • La régularité aide à améliorer la mémorisation des rêves{'\n'}
             • Gardez votre journal près de votre lit{'\n'}
             • Écrivez dès le réveil, avant que les détails ne s'estompent
           </Text>
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text style={styles.infoTitle}>🎯 Objectifs suggérés</Text>
+      <ThemedCard style={styles.card}>
+        <View style={{ padding: 16 }}>
+          <Text style={[styles.infoTitle, { color: theme.text }]}>🎯 Objectifs suggérés</Text>
           <View style={styles.goalItem}>
             <Text style={styles.goalEmoji}>📝</Text>
-            <Text style={styles.goalText}>Enregistrer au moins 1 rêve par semaine</Text>
+            <Text style={[styles.goalText, { color: theme.text }]}>Enregistrer au moins 1 rêve par semaine</Text>
           </View>
           <View style={styles.goalItem}>
             <Text style={styles.goalEmoji}>✨</Text>
-            <Text style={styles.goalText}>Essayer d'avoir un rêve lucide par mois</Text>
+            <Text style={[styles.goalText, { color: theme.text }]}>Essayer d'avoir un rêve lucide par mois</Text>
           </View>
           <View style={styles.goalItem}>
             <Text style={styles.goalEmoji}>📊</Text>
-            <Text style={styles.goalText}>Consulter vos statistiques régulièrement</Text>
+            <Text style={[styles.goalText, { color: theme.text }]}>Consulter vos statistiques régulièrement</Text>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
     </View>
   );
 }
@@ -348,8 +363,8 @@ export default function NotificationSettings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 16,
+    width: '100%',
   },
   card: {
     marginBottom: 16,
@@ -364,11 +379,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffffff',
   },
   description: {
     fontSize: 14,
-    color: '#ffffffff',
     lineHeight: 20,
   },
   divider: {
@@ -386,7 +399,6 @@ const styles = StyleSheet.create({
   timeLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffffff',
   },
   timeButton: {
     marginTop: 8,
@@ -403,12 +415,10 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffffff',
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#ffffffff',
     lineHeight: 22,
   },
   goalItem: {
@@ -422,7 +432,6 @@ const styles = StyleSheet.create({
   },
   goalText: {
     fontSize: 14,
-    color: '#ffffffff',
     flex: 1,
   },
 });

@@ -1,9 +1,8 @@
 import ThemeToggle from '@/components/ThemeToggle';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { useColorScheme } from '@/components/useColorScheme';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -23,27 +22,28 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const theme = useAppTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#fff',
+        tabBarActiveTintColor: theme.text,
+        tabBarInactiveTintColor: theme.text,
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#000',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#fff',
+        headerTintColor: theme.text,
         headerTitleStyle: {
-          color: '#fff',
+          color: theme.text,
         },
         tabBarStyle: {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
-          backgroundColor: '#000',
-          borderTopWidth: 0,
+          backgroundColor: theme.background,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
         },
         tabBarShowLabel: false,
       }}>

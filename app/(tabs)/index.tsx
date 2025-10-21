@@ -1,12 +1,10 @@
 import DreamForm from '@/components/DreamForm';
 import { View } from '@/components/Themed';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { StyleSheet } from 'react-native';
 
 export default function TabOneScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = useAppTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

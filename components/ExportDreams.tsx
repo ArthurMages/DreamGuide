@@ -1,9 +1,11 @@
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import React, { useState } from 'react';
 import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, Text } from 'react-native-paper';
+import { Button, Divider, Text } from 'react-native-paper';
+import { ThemedCard } from './ThemedCard';
 
 interface Dream {
   dreamText: string;
@@ -23,10 +25,13 @@ interface Dream {
   overallTone?: string;
 }
 
+const getDocumentDirectory = () => {
+  return FileSystem.documentDirectory || '';
+};
+
 export default function ExportDreams() {
   const [isExporting, setIsExporting] = useState(false);
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = useAppTheme();
 
   const formatDreamToText = (dream: Dream, index: number): string => {
     const date = new Date(dream.todayDate).toLocaleDateString('fr-FR', {
@@ -278,37 +283,38 @@ export default function ExportDreams() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Card style={[styles.card, { backgroundColor: theme.background }]}>
-        <Card.Content>
-          <Text style={[styles.title, { color: theme.text }]}>📤 Exporter mes rêves</Text>
-          <Text style={[styles.description, { color: theme.text }]}>
+      <ThemedCard style={styles.card}>
+        <View style={{ padding: 16 }}>
+          <Text variant="titleLarge" style={{ color: theme.text, marginBottom: 8 }}>📤 Exporter mes rêves</Text>
+          <Text variant="bodyMedium" style={{ color: theme.text }}>
             Exportez votre journal de rêves dans différents formats pour le sauvegarder ou le partager.
           </Text>
 
-          <Divider style={styles.divider} />
+          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <View style={styles.exportOption}>
-            <Text style={styles.optionTitle}>📄 Format Texte</Text>
-            <Text style={styles.optionDescription}>
+            <Text variant="titleMedium" style={{ color: theme.text }}>📄 Format Texte</Text>
+            <Text variant="bodyMedium" style={{ color: theme.text, marginBottom: 12 }}>
               Export lisible avec toutes les informations formatées
             </Text>
             <Button
-              mode="contained"
+              mode="outlined"
               onPress={exportAsText}
               loading={isExporting}
               disabled={isExporting}
               style={styles.button}
+              textColor={theme.text}
               icon="file-document"
             >
               Exporter en TXT
             </Button>
           </View>
 
-          <Divider style={styles.divider} />
+          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <View style={styles.exportOption}>
-            <Text style={styles.optionTitle}>📊 Format CSV</Text>
-            <Text style={styles.optionDescription}>
+            <Text style={[styles.optionTitle, { color: theme.text }]}>📊 Format CSV</Text>
+            <Text style={[styles.optionDescription, { color: theme.text }]}>
               Format tableur compatible Excel et Google Sheets
             </Text>
             <Button
@@ -318,16 +324,17 @@ export default function ExportDreams() {
               disabled={isExporting}
               style={styles.button}
               icon="table"
+              textColor={theme.background}
             >
               Exporter en CSV
             </Button>
           </View>
 
-          <Divider style={styles.divider} />
+          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <View style={styles.exportOption}>
-            <Text style={styles.optionTitle}>💾 Format JSON</Text>
-            <Text style={styles.optionDescription}>
+            <Text style={[styles.optionTitle, { color: theme.text }]}>💾 Format JSON</Text>
+            <Text style={[styles.optionDescription, { color: theme.text }]}>
               Format de données brut pour développeurs et backup complet
             </Text>
             <Button
@@ -337,24 +344,25 @@ export default function ExportDreams() {
               disabled={isExporting}
               style={styles.button}
               icon="code-braces"
+              textColor={theme.background}
             >
               Exporter en JSON
             </Button>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text style={styles.infoTitle}>ℹ️ Informations</Text>
-          <Text style={styles.infoText}>
+      <ThemedCard style={styles.card}>
+        <View style={{ padding: 16 }}>
+          <Text style={[styles.infoTitle, { color: theme.text }]}>ℹ️ Informations</Text>
+          <Text style={[styles.infoText, { color: theme.text }]}>
             • Les exports incluent tous vos rêves enregistrés{'\n'}
             • Vos données restent privées et ne sont partagées que si vous le choisissez{'\n'}
             • Les fichiers peuvent être réimportés ou consultés sur n'importe quel appareil{'\n'}
             • Pensez à faire des sauvegardes régulières
           </Text>
-        </Card.Content>
-      </Card>
+        </View>
+      </ThemedCard>
     </View>
   );
 }
@@ -366,16 +374,7 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
+    borderRadius: 12,
   },
   divider: {
     marginVertical: 16,

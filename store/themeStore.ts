@@ -1,23 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ColorSchemeName } from 'react-native';
 import { create } from 'zustand';
 
+type ThemeType = 'light' | 'dark';
+
 interface ThemeState {
-    theme: ColorSchemeName;
-    setTheme: (theme: ColorSchemeName) => void;
+    theme: ThemeType;
+    setTheme: (theme: ThemeType) => Promise<void>;
+    toggleTheme: () => Promise<void>;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
     theme: 'light',
-    setTheme: (theme) => {
-        set({ theme });
-        AsyncStorage.setItem('userTheme', theme || 'light');
+    setTheme: async (newTheme) => {
+        await AsyncStorage.setItem('userTheme', newTheme);
+        set({ theme: newTheme });
+    },
+    toggleTheme: async () => {
+        const currentTheme = get().theme;
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        await AsyncStorage.setItem('userTheme', newTheme);
+        set({ theme: newTheme });
     },
 }));
-
-// Initialiser le thème depuis le stockage
-AsyncStorage.getItem('userTheme').then((theme) => {
-    if (theme) {
-        useThemeStore.getState().setTheme(theme as ColorSchemeName);
-    }
-});

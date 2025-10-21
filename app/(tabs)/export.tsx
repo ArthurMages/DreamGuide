@@ -1,11 +1,14 @@
 import ExportDreams from '@/components/ExportDreams';
+import { ThemedScreen } from '@/components/ThemedScreen';
 import { ScrollView, StyleSheet } from 'react-native';
 
 export default function ExportScreen() {
   return (
-    <ScrollView style={[styles.container, { backgroundColor: '#fff' }]}>
-      <ExportDreams />
-    </ScrollView>
+    <ThemedScreen>
+      <ScrollView style={styles.container}>
+        <ExportDreams />
+      </ScrollView>
+    </ThemedScreen>
   );
 }
 
