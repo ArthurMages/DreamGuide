@@ -1,12 +1,16 @@
+import DreamForm from '@/components/DreamForm';
+import { View } from '@/components/Themed';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import { StyleSheet } from 'react-native';
-import DreamForm from '@/components/DreamForm'
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
 
 export default function TabOneScreen() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+
   return (
-    <View style={styles.container}>
-      <DreamForm/>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <DreamForm />
     </View>
   );
 }
@@ -14,8 +18,7 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'relative',
   },
   title: {
     fontSize: 20,

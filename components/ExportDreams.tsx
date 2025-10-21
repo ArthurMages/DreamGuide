@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert, Share, Platform } from 'react-native';
-import { Button, Card, Text, Divider } from 'react-native-paper';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState } from 'react';
+import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
+import { Button, Card, Divider, Text } from 'react-native-paper';
 
 interface Dream {
   dreamText: string;
@@ -23,6 +25,8 @@ interface Dream {
 
 export default function ExportDreams() {
   const [isExporting, setIsExporting] = useState(false);
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
 
   const formatDreamToText = (dream: Dream, index: number): string => {
     const date = new Date(dream.todayDate).toLocaleDateString('fr-FR', {
@@ -121,7 +125,7 @@ export default function ExportDreams() {
 
   const formatDreamToCSV = (dreams: Dream[]): string => {
     let csv = 'Date,Type,Description,Lieu,Personnages,Intensité,Clarté,Tonalité,Qualité Sommeil,Mots-clés,Hashtags\n';
-    
+
     dreams.forEach(dream => {
       const date = new Date(dream.todayDate).toLocaleDateString('fr-FR');
       const type = dream.dreamType || 'ordinary';
@@ -214,7 +218,7 @@ export default function ExportDreams() {
       } else {
         const fileUri = `${getDocumentDirectory()}mes-reves-${new Date().toISOString().split('T')[0]}.json`;
         await FileSystem.writeAsStringAsync(fileUri, jsonContent);
-        
+
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri);
         } else {
@@ -255,7 +259,7 @@ export default function ExportDreams() {
       } else {
         const fileUri = `${getDocumentDirectory()}mes-reves-${new Date().toISOString().split('T')[0]}.csv`;
         await FileSystem.writeAsStringAsync(fileUri, csvContent);
-        
+
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri);
         } else {
@@ -273,11 +277,11 @@ export default function ExportDreams() {
   };
 
   return (
-    <View style={styles.container}>
-      <Card style={styles.card}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Card style={[styles.card, { backgroundColor: theme.background }]}>
         <Card.Content>
-          <Text style={styles.title}>📤 Exporter mes rêves</Text>
-          <Text style={styles.description}>
+          <Text style={[styles.title, { color: theme.text }]}>📤 Exporter mes rêves</Text>
+          <Text style={[styles.description, { color: theme.text }]}>
             Exportez votre journal de rêves dans différents formats pour le sauvegarder ou le partager.
           </Text>
 
@@ -358,7 +362,6 @@ export default function ExportDreams() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 16,
   },
   card: {
@@ -368,12 +371,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffffff',
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: '#f7f7f7ff',
     lineHeight: 20,
   },
   divider: {
@@ -385,12 +386,10 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffffff',
     marginBottom: 6,
   },
   optionDescription: {
     fontSize: 14,
-    color: '#ffffffff',
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -400,12 +399,10 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffffff',
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#ffffffff',
     lineHeight: 22,
   },
 });

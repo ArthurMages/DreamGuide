@@ -1,11 +1,14 @@
-import { StyleSheet, ScrollView } from 'react-native';
-// Assurez-vous que le composant ExportDreams.tsx existe dans /components
 import ExportDreams from '@/components/ExportDreams';
-import { View } from '@/components/Themed';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+import { ScrollView, StyleSheet } from 'react-native';
 
 export default function ExportScreen() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <ExportDreams />
     </ScrollView>
   );
@@ -14,6 +17,5 @@ export default function ExportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
 });
