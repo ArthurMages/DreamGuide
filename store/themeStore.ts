@@ -11,10 +11,12 @@ interface ThemeState {
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
     theme: 'light',
+    
     setTheme: async (newTheme) => {
         await AsyncStorage.setItem('userTheme', newTheme);
         set({ theme: newTheme });
     },
+    
     toggleTheme: async () => {
         const currentTheme = get().theme;
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
