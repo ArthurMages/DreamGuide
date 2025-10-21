@@ -1,10 +1,17 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ProgressBar } from 'react-native-paper';
 
 const { width } = Dimensions.get('window');
+
+// Définition des couleurs constantes pour le thème clair
+const lightThemeColors = {
+  background: '#fff',
+  text: '#000',
+  card: '#fff',
+};
 
 interface Dream {
   dreamText: string;
@@ -48,7 +55,7 @@ export default function StatisticsScreen() {
 
       // Calculer les statistiques
       const lucidCount = validDreams.filter(d => d.isLucidDream || d.dreamType === 'lucid').length;
-      
+
       let totalIntensity = 0;
       let intensityCount = 0;
       let totalClarity = 0;

@@ -2,7 +2,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Pressable } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -29,25 +28,33 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#000',
-        tabBarInactiveTintColor: '#000',
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: '#fff',
         headerShown: true,
+        headerStyle: {
+          backgroundColor: '#000',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          color: '#fff',
+        },
         tabBarStyle: {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          backgroundColor: '#000',
+          borderTopWidth: 0,
         },
         tabBarShowLabel: false,
-        headerRight: () => (
-          <Pressable style={{ marginRight: 15 }}>
-            <ThemeToggle />
-          </Pressable>
-        ),
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Nouveau Rêve',
+          headerTitle: 'Nouveau Rêve',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="plus-circle" color={color} focused={focused} />,
 
         }}
