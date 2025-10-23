@@ -63,6 +63,9 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Mes Rêves',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="book" color={color} focused={focused} />,
         }}
       />
@@ -70,6 +73,9 @@ export default function TabLayout() {
         name="three"
         options={{
           title: 'Rechercher',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
         }}
       />
@@ -77,6 +83,9 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Statistiques',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="bar-chart" color={color} focused={focused} />,
         }}
       />
@@ -84,6 +93,9 @@ export default function TabLayout() {
         name="export"
         options={{
           title: 'Exporter',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
         }}
       />
