@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
@@ -41,6 +42,7 @@ const DREAM_TYPE_ICONS: { [key: string]: string } = {
 };
 
 export default function TabThreeScreen() {
+  const theme = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [allDreams, setAllDreams] = useState<Dream[]>([]);
   const [filteredDreams, setFilteredDreams] = useState<Dream[]>([]);
@@ -64,7 +66,6 @@ export default function TabThreeScreen() {
       // Extraire tous les hashtags
       const hashtags = new Set<string>();
       validDreams.forEach(dream => {
-        // Support new array-based hashtags (hashtagsArray) and legacy fields
         if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
           dream.hashtagsArray.forEach((h: any) => { if (h?.label) hashtags.add(h.label); });
         } else {
@@ -111,7 +112,6 @@ export default function TabThreeScreen() {
         const text = dream.dreamText.toLowerCase();
         const location = dream.location?.toLowerCase() || '';
         const characters = dream.characters?.toLowerCase() || '';
-        // Build hashtag search string from new array or legacy fields
         let hashtagSearch = '';
         if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
           hashtagSearch = dream.hashtagsArray.map((h: any) => h.label?.toLowerCase()).filter(Boolean).join(' ');
@@ -174,12 +174,12 @@ export default function TabThreeScreen() {
     const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
 
     return (
-      <Card key={index} style={styles.dreamCard}>
+      <Card key={index} style={[styles.dreamCard, { backgroundColor: theme.card }]}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <Text style={styles.dreamIcon}>{dreamIcon}</Text>
+            <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
             <View style={styles.headerInfo}>
-              <Text style={styles.dreamDate}>
+              <Text style={[styles.dreamDate, { color: theme.text }]}>
                 {new Date(dream.todayDate).toLocaleDateString('fr-FR', {
                   day: 'numeric',
                   month: 'short',
@@ -187,29 +187,39 @@ export default function TabThreeScreen() {
                 })}
               </Text>
               {dream.location && (
-                <Text style={styles.dreamLocation}>📍 {dream.location}</Text>
+                <Text style={[styles.dreamLocation, { color: theme.text }]}>📍 {dream.location}</Text>
               )}
             </View>
           </View>
 
-          <Text style={styles.dreamText} numberOfLines={3}>
+          <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={3}>
             {dream.dreamText}
           </Text>
 
           {dream.characters && (
-            <Text style={styles.dreamMeta}>
+            <Text style={[styles.dreamMeta, { color: theme.text }]}>
               👥 {dream.characters}
             </Text>
           )}
 
           <View style={styles.metaRow}>
             {dream.emotionalIntensity && (
-              <Chip compact icon="lightning-bolt" style={styles.metaChip}>
+              <Chip 
+                compact 
+                icon="lightning-bolt" 
+                style={[styles.metaChip, { backgroundColor: theme.surface }]}
+                textStyle={{ color: theme.text }}
+              >
                 {dream.emotionalIntensity}/10
               </Chip>
             )}
             {dream.clarity && (
-              <Chip compact icon="eye" style={styles.metaChip}>
+              <Chip 
+                compact 
+                icon="eye" 
+                style={[styles.metaChip, { backgroundColor: theme.surface }]}
+                textStyle={{ color: theme.text }}
+              >
                 Clarté {dream.clarity}/10
               </Chip>
             )}
@@ -217,17 +227,43 @@ export default function TabThreeScreen() {
 
           <View style={styles.hashtagsContainer}>
             {dream.hashtagsArray && Array.isArray(dream.hashtagsArray) ? (
-              dream.hashtagsArray.map((h: any, i: number) => h?.label ? <Chip key={`chip-${i}`} compact style={styles.hashtag}>#{h.label}</Chip> : null)
+              dream.hashtagsArray.map((h: any, i: number) => h?.label ? 
+                <Chip 
+                  key={`chip-${i}`} 
+                  compact 
+                  style={[styles.hashtag, { backgroundColor: theme.accent }]}
+                  textStyle={{ color: theme.background }}
+                >
+                  #{h.label}
+                </Chip> : null)
             ) : (
               <>
                 {dream.hashtags?.hashtag1?.label && (
-                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag1.label}</Chip>
+                  <Chip 
+                    compact 
+                    style={[styles.hashtag, { backgroundColor: theme.accent }]}
+                    textStyle={{ color: theme.background }}
+                  >
+                    #{dream.hashtags.hashtag1.label}
+                  </Chip>
                 )}
                 {dream.hashtags?.hashtag2?.label && (
-                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag2.label}</Chip>
+                  <Chip 
+                    compact 
+                    style={[styles.hashtag, { backgroundColor: theme.accent }]}
+                    textStyle={{ color: theme.background }}
+                  >
+                    #{dream.hashtags.hashtag2.label}
+                  </Chip>
                 )}
                 {dream.hashtags?.hashtag3?.label && (
-                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag3.label}</Chip>
+                  <Chip 
+                    compact 
+                    style={[styles.hashtag, { backgroundColor: theme.accent }]}
+                    textStyle={{ color: theme.background }}
+                  >
+                    #{dream.hashtags.hashtag3.label}
+                  </Chip>
                 )}
               </>
             )}
@@ -238,18 +274,28 @@ export default function TabThreeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Barre de recherche */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
         <TextInput
           label="Rechercher dans mes rêves"
           value={searchQuery}
           onChangeText={setSearchQuery}
           mode="outlined"
-          style={styles.searchInput}
+          style={[styles.searchInput, { backgroundColor: theme.card }]}
           left={<TextInput.Icon icon="magnify" />}
           placeholder="Texte, hashtag, lieu, personnage..."
           right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} /> : undefined}
+          textColor={theme.text}
+          outlineColor={theme.border}
+          activeOutlineColor={theme.accent}
+          placeholderTextColor={theme.textSecondary}
+          theme={{
+            colors: {
+              background: theme.card,
+              onSurfaceVariant: theme.text,
+            }
+          }}
         />
 
         <Button
@@ -257,6 +303,8 @@ export default function TabThreeScreen() {
           onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
           style={styles.filterButton}
           icon="filter-variant"
+          textColor={showAdvancedFilters ? theme.background : theme.text}
+          buttonColor={showAdvancedFilters ? theme.accent : theme.card}
         >
           Filtres {showAdvancedFilters ? '▲' : '▼'}
         </Button>
@@ -264,11 +312,11 @@ export default function TabThreeScreen() {
 
       {/* Filtres avancés */}
       {showAdvancedFilters && (
-        <View style={styles.advancedFilters}>
+        <View style={[styles.advancedFilters, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {/* Type de rêve */}
             <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Type de rêve</Text>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>Type de rêve</Text>
               <SegmentedButtons
                 value={filterType}
                 onValueChange={setFilterType}
@@ -279,12 +327,18 @@ export default function TabThreeScreen() {
                   { value: 'nightmare', label: '😱' },
                 ]}
                 style={styles.segmentedButtons}
+                theme={{
+                  colors: {
+                    secondaryContainer: theme.accent,
+                    onSecondaryContainer: theme.background,
+                  }
+                }}
               />
             </View>
 
             {/* Tonalité */}
             <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Tonalité</Text>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>Tonalité</Text>
               <SegmentedButtons
                 value={filterTone}
                 onValueChange={setFilterTone}
@@ -295,6 +349,12 @@ export default function TabThreeScreen() {
                   { value: 'negative', label: '😔' },
                 ]}
                 style={styles.segmentedButtons}
+                theme={{
+                  colors: {
+                    secondaryContainer: theme.accent,
+                    onSecondaryContainer: theme.background,
+                  }
+                }}
               />
             </View>
           </ScrollView>
@@ -302,7 +362,7 @@ export default function TabThreeScreen() {
           {/* Filtres d'émotions */}
           {allEmotions.length > 0 && (
             <View style={styles.emotionFilterSection}>
-              <Text style={styles.filterLabel}>Émotions</Text>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>Émotions</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.emotionChips}>
                   {allEmotions.map(emotion => (
@@ -312,6 +372,8 @@ export default function TabThreeScreen() {
                       onPress={() => toggleEmotion(emotion)}
                       style={styles.emotionChip}
                       mode="outlined"
+                      selectedColor={theme.accent}
+                      textStyle={{ color: theme.text }}
                     >
                       {emotion}
                     </Chip>
@@ -326,6 +388,7 @@ export default function TabThreeScreen() {
             onPress={clearFilters}
             style={styles.clearButton}
             icon="close"
+            textColor={theme.text}
           >
             Effacer les filtres
           </Button>
@@ -334,8 +397,8 @@ export default function TabThreeScreen() {
 
       {/* Suggestions rapides */}
       {!searchQuery && !showAdvancedFilters && (
-        <View style={styles.suggestionsSection}>
-          <Text style={styles.sectionTitle}>Recherches rapides :</Text>
+        <View style={[styles.suggestionsSection, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Recherches rapides :</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.suggestionChips}>
               {allHashtags.slice(0, 10).map((tag, index) => (
@@ -343,7 +406,12 @@ export default function TabThreeScreen() {
                   key={index}
                   onPress={() => setSearchQuery(tag)}
                 >
-                  <Chip style={styles.suggestionChip}>#{tag}</Chip>
+                  <Chip 
+                    style={[styles.suggestionChip, { backgroundColor: theme.surface }]}
+                    textStyle={{ color: theme.text }}
+                  >
+                    #{tag}
+                  </Chip>
                 </TouchableOpacity>
               ))}
             </View>
@@ -355,8 +423,8 @@ export default function TabThreeScreen() {
       <ScrollView style={styles.resultsContainer} contentContainerStyle={styles.resultsContent}>
         {/* Indicateur de résultats */}
         {(searchQuery || filterType !== 'all' || filterTone !== 'all' || selectedEmotions.length > 0) && (
-          <View style={styles.resultHeader}>
-            <Text style={styles.resultCount}>
+          <View style={[styles.resultHeader, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.resultCount, { color: theme.accent }]}>
               {filteredDreams.length} rêve{filteredDreams.length > 1 ? 's' : ''} trouvé{filteredDreams.length > 1 ? 's' : ''}
             </Text>
           </View>
@@ -365,8 +433,8 @@ export default function TabThreeScreen() {
         {filteredDreams.length === 0 && (searchQuery || showAdvancedFilters) ? (
           <View style={styles.noResults}>
             <Text style={styles.noResultsIcon}>🔍</Text>
-            <Text style={styles.noResultsText}>Aucun rêve trouvé</Text>
-            <Text style={styles.noResultsSubtext}>
+            <Text style={[styles.noResultsText, { color: theme.text }]}>Aucun rêve trouvé</Text>
+            <Text style={[styles.noResultsSubtext, { color: theme.text }]}>
               Essayez de modifier vos critères de recherche
             </Text>
           </View>
@@ -377,8 +445,8 @@ export default function TabThreeScreen() {
         {!searchQuery && !showAdvancedFilters && filteredDreams.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🌙</Text>
-            <Text style={styles.emptyText}>Commencez à rechercher vos rêves</Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptyText, { color: theme.text }]}>Commencez à rechercher vos rêves</Text>
+            <Text style={[styles.emptySubtext, { color: theme.text }]}>
               Utilisez la barre de recherche ou les filtres pour explorer votre journal
             </Text>
           </View>
@@ -391,26 +459,20 @@ export default function TabThreeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   searchInput: {
-    backgroundColor: '#fff',
     marginBottom: 8,
   },
   filterButton: {
     marginTop: 4,
   },
   advancedFilters: {
-    backgroundColor: '#fff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   filterSection: {
     marginRight: 16,
@@ -420,7 +482,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#333',
   },
   segmentedButtons: {
     marginBottom: 12,
@@ -440,22 +501,18 @@ const styles = StyleSheet.create({
   },
   suggestionsSection: {
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#333',
   },
   suggestionChips: {
     flexDirection: 'row',
     gap: 8,
   },
   suggestionChip: {
-    backgroundColor: '#242424ff',
     marginRight: 8,
   },
   resultsContainer: {
@@ -467,13 +524,11 @@ const styles = StyleSheet.create({
   resultHeader: {
     marginBottom: 16,
     padding: 12,
-    backgroundColor: '#e8f4f8',
     borderRadius: 8,
   },
   resultCount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#0066cc',
     textAlign: 'center',
   },
   dreamCard: {
@@ -495,23 +550,21 @@ const styles = StyleSheet.create({
   dreamDate: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#ffffffff',
   },
   dreamLocation: {
     fontSize: 12,
-    color: '#ffffffff',
     marginTop: 2,
+    opacity: 0.8,
   },
   dreamText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#ffffffff',
     marginBottom: 12,
   },
   dreamMeta: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 8,
+    opacity: 0.8,
   },
   metaRow: {
     flexDirection: 'row',
@@ -520,7 +573,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metaChip: {
-    backgroundColor: '#171717',
+    opacity: 0.9,
   },
   hashtagsContainer: {
     flexDirection: 'row',
@@ -528,7 +581,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   hashtag: {
-    backgroundColor: '#e0f2f1',
+    opacity: 0.9,
   },
   noResults: {
     alignItems: 'center',
@@ -541,13 +594,12 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   noResultsSubtext: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
+    opacity: 0.7,
   },
   emptyState: {
     alignItems: 'center',
@@ -560,13 +612,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     paddingHorizontal: 40,
+    opacity: 0.7,
   },
 });

@@ -1,11 +1,13 @@
 import NotificationSettings from '@/components/NotificationSettings';
 import { ThemedScreen } from '@/components/ThemedScreen';
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 export default function SettingsScreen() {
   return (
     <ThemedScreen>
-      <NotificationSettings />
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <NotificationSettings />
+      </ScrollView>
     </ThemedScreen>
   );
 }
@@ -13,5 +15,8 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 40,
   },
 });

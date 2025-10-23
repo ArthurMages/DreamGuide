@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
-import { ProgressBar, Text, useTheme } from 'react-native-paper';
+import { ProgressBar, Text } from 'react-native-paper';
 import { ThemedCard } from './ThemedCard';
 
 const { width } = Dimensions.get('window');
@@ -18,7 +18,7 @@ interface Dream {
   emotionalIntensity?: number;
   clarity?: number;
   keywords?: string[];
-  sleepQuality?: string;
+  sleepQuality?: number;
   overallTone?: string;
 }
 
@@ -36,7 +36,9 @@ interface Statistics {
   keywords: { [key: string]: number };
   sleepQuality: { [key: string]: number };
   toneDistribution: { positive: number; neutral: number; negative: number };
-}const DREAM_TYPE_LABELS: { [key: string]: string } = {
+}
+
+const DREAM_TYPE_LABELS: { [key: string]: string } = {
   ordinary: '💭 Ordinaire',
   lucid: '✨ Lucide',
   nightmare: '😱 Cauchemar',
@@ -46,7 +48,6 @@ interface Statistics {
 
 export default function StatisticsScreen() {
   const theme = useAppTheme();
-  const paperTheme = useTheme();
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [stats, setStats] = useState<Statistics>({
     total: 0,
@@ -68,7 +69,7 @@ export default function StatisticsScreen() {
     useCallback(() => {
       const loadDreams = async () => {
         try {
-          const dreamsString = await AsyncStorage.getItem('dreams');
+          const dreamsString = await AsyncStorage.getItem('dreamFormDataArray');
           if (dreamsString) {
             const loadedDreams: Dream[] = JSON.parse(dreamsString);
             setDreams(loadedDreams);
@@ -132,7 +133,8 @@ export default function StatisticsScreen() {
 
       // Sleep quality
       if (dream.sleepQuality) {
-        newStats.sleepQuality[dream.sleepQuality] = (newStats.sleepQuality[dream.sleepQuality] || 0) + 1;
+        const qualityLabel = getQualityLabel(dream.sleepQuality);
+        newStats.sleepQuality[qualityLabel] = (newStats.sleepQuality[qualityLabel] || 0) + 1;
       }
 
       // Overall tone
@@ -161,16 +163,24 @@ export default function StatisticsScreen() {
     setStats(newStats);
   };
 
+  const getQualityLabel = (v: number) => {
+    if (v <= 2) return 'Cauchemar';
+    if (v <= 4) return 'Très mauvaise';
+    if (v <= 6) return 'Moyenne';
+    if (v <= 8) return 'Bonne';
+    return 'Beaux rêves';
+  };
+
   const renderDreamTypeStats = () => {
     const total = dreams.length;
     return Object.entries(stats.dreamTypes).map(([type, count]) => (
       <View key={type} style={styles.statRow}>
-        <Text style={styles.text}>{DREAM_TYPE_LABELS[type] || type}: {count}</Text>
+        <Text style={[styles.text, { color: theme.text }]}>{DREAM_TYPE_LABELS[type] || type}: {count}</Text>
         <View style={styles.progressBarContainer}>
           <ProgressBar
             progress={total > 0 ? count / total : 0}
             color={theme.accent}
-            style={styles.progressBar}
+            style={[styles.progressBar, { backgroundColor: theme.border }]}
           />
         </View>
       </View>
@@ -180,18 +190,18 @@ export default function StatisticsScreen() {
   const renderEmotionStats = (emotions: { [key: string]: number }, title: string) => {
     const total = Object.values(emotions).reduce((acc, val) => acc + val, 0);
     return (
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>{title}</Text>
+      <ThemedCard style={styles.card}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
         {Object.entries(emotions)
           .sort(([, a], [, b]) => b - a)
           .map(([emotion, count]) => (
             <View key={emotion} style={styles.statRow}>
-              <Text style={{ color: '#000000' }}>{emotion}: {count}</Text>
+              <Text style={[styles.text, { color: theme.text }]}>{emotion}: {count}</Text>
               <View style={styles.progressBarContainer}>
                 <ProgressBar
                   progress={total > 0 ? count / total : 0}
                   color={theme.accent}
-                  style={styles.progressBar}
+                  style={[styles.progressBar, { backgroundColor: theme.border }]}
                 />
               </View>
             </View>
@@ -202,90 +212,94 @@ export default function StatisticsScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>Statistiques générales</Text>
-        <Text style={{ color: '#000000' }}>Total de rêves: {stats.total}</Text>
-        <Text style={{ color: '#000000' }}>Rêves lucides: {stats.lucidCount} ({stats.lucidPercentage.toFixed(1)}%)</Text>
-        <Text style={{ color: '#000000' }}>Intensité moyenne: {stats.avgIntensity.toFixed(1)}/5</Text>
-        <Text style={{ color: '#000000' }}>Clarté moyenne: {stats.avgClarity.toFixed(1)}/5</Text>
+      <ThemedCard style={styles.card}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>📊 Statistiques générales</Text>
+        <Text style={[styles.text, { color: theme.text }]}>Total de rêves: {stats.total}</Text>
+        <Text style={[styles.text, { color: theme.text }]}>Rêves lucides: {stats.lucidCount} ({stats.lucidPercentage.toFixed(1)}%)</Text>
+        <Text style={[styles.text, { color: theme.text }]}>Intensité moyenne: {stats.avgIntensity.toFixed(1)}/10</Text>
+        <Text style={[styles.text, { color: theme.text }]}>Clarté moyenne: {stats.avgClarity.toFixed(1)}/10</Text>
       </ThemedCard>
 
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>Types de rêves</Text>
+      <ThemedCard style={styles.card}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>🎭 Types de rêves</Text>
         {renderDreamTypeStats()}
       </ThemedCard>
 
-      {renderEmotionStats(stats.emotions.before, 'Émotions avant le rêve')}
-      {renderEmotionStats(stats.emotions.after, 'Émotions après le rêve')}
+      {Object.keys(stats.emotions.before).length > 0 && renderEmotionStats(stats.emotions.before, '😴 Émotions avant le rêve')}
+      {Object.keys(stats.emotions.after).length > 0 && renderEmotionStats(stats.emotions.after, '😊 Émotions après le rêve')}
 
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>Qualité du sommeil</Text>
-        {Object.entries(stats.sleepQuality).map(([quality, count]) => (
-          <View key={quality} style={styles.statRow}>
-            <Text style={styles.text}>{quality}: {count}</Text>
-            <View style={styles.progressBarContainer}>
-              <ProgressBar
-                progress={stats.total > 0 ? count / stats.total : 0}
-                color={theme.accent}
-                style={styles.progressBar}
-              />
-            </View>
-          </View>
-        ))}
-      </ThemedCard>
-
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>Distribution des tonalités</Text>
-        <View style={styles.statRow}>
-          <Text style={{ color: '#000000' }}>Positive: {stats.toneDistribution.positive}</Text>
-          <View style={styles.progressBarContainer}>
-            <ProgressBar
-              progress={stats.total > 0 ? stats.toneDistribution.positive / stats.total : 0}
-              color={theme.accent}
-              style={styles.progressBar}
-            />
-          </View>
-        </View>
-        <View style={styles.statRow}>
-          <Text style={{ color: '#000000' }}>Neutre: {stats.toneDistribution.neutral}</Text>
-          <View style={styles.progressBarContainer}>
-            <ProgressBar
-              progress={stats.total > 0 ? stats.toneDistribution.neutral / stats.total : 0}
-              color={theme.accent}
-              style={styles.progressBar}
-            />
-          </View>
-        </View>
-        <View style={styles.statRow}>
-          <Text style={{ color: '#000000' }}>Négative: {stats.toneDistribution.negative}</Text>
-          <View style={styles.progressBarContainer}>
-            <ProgressBar
-              progress={stats.total > 0 ? stats.toneDistribution.negative / stats.total : 0}
-              color={theme.accent}
-              style={styles.progressBar}
-            />
-          </View>
-        </View>
-      </ThemedCard>
-
-      <ThemedCard style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={[styles.cardTitle, { color: '#000000' }]}>Mots-clés fréquents</Text>
-        {Object.entries(stats.keywords)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 10)
-          .map(([keyword, count]) => (
-            <View key={keyword} style={styles.statRow}>
-              <Text style={{ color: '#000000' }}>{keyword}: {count}</Text>
+      {Object.keys(stats.sleepQuality).length > 0 && (
+        <ThemedCard style={styles.card}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>😴 Qualité du sommeil</Text>
+          {Object.entries(stats.sleepQuality).map(([quality, count]) => (
+            <View key={quality} style={styles.statRow}>
+              <Text style={[styles.text, { color: theme.text }]}>{quality}: {count}</Text>
               <View style={styles.progressBarContainer}>
                 <ProgressBar
                   progress={stats.total > 0 ? count / stats.total : 0}
                   color={theme.accent}
-                  style={styles.progressBar}
+                  style={[styles.progressBar, { backgroundColor: theme.border }]}
                 />
               </View>
             </View>
           ))}
+        </ThemedCard>
+      )}
+
+      <ThemedCard style={styles.card}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>🎨 Distribution des tonalités</Text>
+        <View style={styles.statRow}>
+          <Text style={[styles.text, { color: theme.text }]}>😊 Positive: {stats.toneDistribution.positive}</Text>
+          <View style={styles.progressBarContainer}>
+            <ProgressBar
+              progress={stats.total > 0 ? stats.toneDistribution.positive / stats.total : 0}
+              color="#4CAF50"
+              style={[styles.progressBar, { backgroundColor: theme.border }]}
+            />
+          </View>
+        </View>
+        <View style={styles.statRow}>
+          <Text style={[styles.text, { color: theme.text }]}>😐 Neutre: {stats.toneDistribution.neutral}</Text>
+          <View style={styles.progressBarContainer}>
+            <ProgressBar
+              progress={stats.total > 0 ? stats.toneDistribution.neutral / stats.total : 0}
+              color="#9E9E9E"
+              style={[styles.progressBar, { backgroundColor: theme.border }]}
+            />
+          </View>
+        </View>
+        <View style={styles.statRow}>
+          <Text style={[styles.text, { color: theme.text }]}>😔 Négative: {stats.toneDistribution.negative}</Text>
+          <View style={styles.progressBarContainer}>
+            <ProgressBar
+              progress={stats.total > 0 ? stats.toneDistribution.negative / stats.total : 0}
+              color="#F44336"
+              style={[styles.progressBar, { backgroundColor: theme.border }]}
+            />
+          </View>
+        </View>
       </ThemedCard>
+
+      {Object.keys(stats.keywords).length > 0 && (
+        <ThemedCard style={styles.card}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>🏷️ Mots-clés fréquents</Text>
+          {Object.entries(stats.keywords)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 10)
+            .map(([keyword, count]) => (
+              <View key={keyword} style={styles.statRow}>
+                <Text style={[styles.text, { color: theme.text }]}>{keyword}: {count}</Text>
+                <View style={styles.progressBarContainer}>
+                  <ProgressBar
+                    progress={stats.total > 0 ? count / stats.total : 0}
+                    color={theme.accent}
+                    style={[styles.progressBar, { backgroundColor: theme.border }]}
+                  />
+                </View>
+              </View>
+            ))}
+        </ThemedCard>
+      )}
     </ScrollView>
   );
 }
@@ -302,14 +316,14 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#000000',
+    marginBottom: 12,
   },
   text: {
-    color: '#000000',
+    fontSize: 14,
+    marginVertical: 4,
   },
   statRow: {
-    marginVertical: 4,
+    marginVertical: 8,
   },
   progressBarContainer: {
     marginTop: 4,
