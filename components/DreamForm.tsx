@@ -35,9 +35,8 @@ export default function DreamForm() {
 
   // Champs existants
   const [dreamText, setDreamText] = useState('');
-  const [hashtag1, setHashtag1] = useState('');
-  const [hashtag2, setHashtag2] = useState('');
-  const [hashtag3, setHashtag3] = useState('');
+  // hashtags dynamiques: au moins un champ par défaut
+  const [hashtags, setHashtags] = useState<string[]>(['']);
 
   // Nouveaux champs
   const [dreamDate, setDreamDate] = useState(new Date());
@@ -76,19 +75,25 @@ export default function DreamForm() {
       const existingData = await AsyncStorage.getItem('dreamFormDataArray');
       const formDataArray = existingData ? JSON.parse(existingData) : [];
 
-      const hashtag1Id = await findHashtagIdByLabel(hashtag1);
-      const hashtag2Id = await findHashtagIdByLabel(hashtag2);
-      const hashtag3Id = await findHashtagIdByLabel(hashtag3);
+      // Générer les IDs pour chaque hashtag non vide
+      const cleanedHashtags = hashtags.map(h => h.trim()).filter(h => h);
+      const hashtagObjs = await Promise.all(cleanedHashtags.map(async (label) => ({ id: await findHashtagIdByLabel(label), label })));
+
+      // Conserver la compatibilité avec l'ancien schéma (hashtag1/2/3)
+      const hashtagsLegacy: any = {};
+      if (hashtagObjs[0]) hashtagsLegacy.hashtag1 = hashtagObjs[0];
+      if (hashtagObjs[1]) hashtagsLegacy.hashtag2 = hashtagObjs[1];
+      if (hashtagObjs[2]) hashtagsLegacy.hashtag3 = hashtagObjs[2];
 
       formDataArray.push({
         dreamText,
         isLucidDream: dreamType === 'lucid',
         todayDate: dreamDate.toISOString(),
+        // Nouveau format: tableau et compatibilité legacy
         hashtags: {
-          hashtag1: { id: hashtag1Id, label: hashtag1 },
-          hashtag2: { id: hashtag2Id, label: hashtag2 },
-          hashtag3: { id: hashtag3Id, label: hashtag3 },
+          ...hashtagsLegacy,
         },
+        hashtagsArray: hashtagObjs,
         // Nouveaux champs
         dreamType,
         emotionBefore,
@@ -110,9 +115,7 @@ export default function DreamForm() {
 
       // Réinitialisation
       setDreamText('');
-      setHashtag1('');
-      setHashtag2('');
-      setHashtag3('');
+      setHashtags(['']);
       setDreamDate(new Date());
       setDreamType('ordinary');
       setEmotionBefore([]);
@@ -379,57 +382,47 @@ export default function DreamForm() {
           {/* Hashtags existants */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>#️⃣ Hashtags</Text>
-            <TextInput
-              label="Hashtag 1"
-              value={hashtag1}
-              onChangeText={setHashtag1}
+            {hashtags.map((tag, idx) => (
+              <View key={`hashtag-${idx}`} style={styles.hashtagRow}>
+                <TextInput
+                  label={`Hashtag ${idx + 1}`}
+                  value={tag}
+                  onChangeText={(text) => {
+                    const copy = [...hashtags];
+                    copy[idx] = text;
+                    setHashtags(copy);
+                  }}
+                  mode="outlined"
+                  style={[styles.input, { flex: 1 }]}
+                  outlineColor="#d0d0d0"
+                  activeOutlineColor="#2196F3"
+                  textColor="#000000"
+                  placeholderTextColor="#757575"
+                  right={
+                    idx > 0 ? <TextInput.Icon icon="close" onPress={() => {
+                      const copy = [...hashtags];
+                      copy.splice(idx, 1);
+                      setHashtags(copy.length ? copy : ['']);
+                    }} /> : undefined
+                  }
+                  theme={{
+                    colors: {
+                      background: '#ffffff',
+                      onSurfaceVariant: '#000000',
+                    }
+                  }}
+                />
+              </View>
+            ))}
+
+            <Button
               mode="outlined"
-              style={styles.input}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
-              theme={{
-                colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
-                }
-              }}
-            />
-            <TextInput
-              label="Hashtag 2"
-              value={hashtag2}
-              onChangeText={setHashtag2}
-              mode="outlined"
-              style={styles.input}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
-              theme={{
-                colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
-                }
-              }}
-            />
-            <TextInput
-              label="Hashtag 3"
-              value={hashtag3}
-              onChangeText={setHashtag3}
-              mode="outlined"
-              style={styles.input}
-              outlineColor="#d0d0d0"
-              activeOutlineColor="#2196F3"
-              textColor="#000000"
-              placeholderTextColor="#757575"
-              theme={{
-                colors: {
-                  background: '#ffffff',
-                  onSurfaceVariant: '#000000',
-                }
-              }}
-            />
+              icon="plus"
+              onPress={() => setHashtags(prev => [...prev, ''])}
+              style={styles.addButton}
+            >
+              Ajouter un hashtag
+            </Button>
           </View>
 
           {/* Signification personnelle */}
@@ -506,6 +499,15 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginBottom: 8,
+  },
+  hashtagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
   },
   submitButton: {
     marginTop: 16,

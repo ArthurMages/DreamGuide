@@ -23,10 +23,11 @@ interface Dream {
   sleepQuality?: string;
   personalMeaning?: string;
   overallTone?: string;
+  hashtagsArray?: { id: string; label: string }[];
 }
 
 const getDocumentDirectory = () => {
-  return FileSystem.documentDirectory || '';
+  return ((FileSystem as any).documentDirectory as string) || '';
 };
 
 export default function ExportDreams() {
@@ -104,16 +105,17 @@ export default function ExportDreams() {
       text += `🏷️ Mots-clés: ${dream.keywords.join(', ')}\n`;
     }
 
-    // Hashtags
-    if (dream.hashtags) {
-      const tags = [
-        dream.hashtags.hashtag1?.label,
-        dream.hashtags.hashtag2?.label,
-        dream.hashtags.hashtag3?.label,
+    // Hashtags (support new array and legacy fields)
+    const tagsArray = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
+      ? dream.hashtagsArray.map((h: any) => h?.label).filter(Boolean)
+      : [
+        dream.hashtags?.hashtag1?.label,
+        dream.hashtags?.hashtag2?.label,
+        dream.hashtags?.hashtag3?.label,
       ].filter(Boolean);
-      if (tags.length > 0) {
-        text += `#️⃣ Hashtags: ${tags.map(t => `#${t}`).join(' ')}\n`;
-      }
+
+    if (tagsArray.length > 0) {
+      text += `#️⃣ Hashtags: ${tagsArray.map((t: string) => `#${t}`).join(' ')}\n`;
     }
 
     // Signification personnelle
@@ -142,11 +144,13 @@ export default function ExportDreams() {
       const tone = dream.overallTone || '';
       const sleepQuality = dream.sleepQuality || '';
       const keywords = dream.keywords?.join(';') || '';
-      const hashtags = [
-        dream.hashtags?.hashtag1?.label,
-        dream.hashtags?.hashtag2?.label,
-        dream.hashtags?.hashtag3?.label,
-      ].filter(Boolean).join(';');
+      const hashtags = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
+        ? dream.hashtagsArray.map((h: any) => h?.label).filter(Boolean).join(';')
+        : [
+          dream.hashtags?.hashtag1?.label,
+          dream.hashtags?.hashtag2?.label,
+          dream.hashtags?.hashtag3?.label,
+        ].filter(Boolean).join(';');
 
       csv += `${date},${type},${description},${location},${characters},${intensity},${clarity},${tone},${sleepQuality},${keywords},${hashtags}\n`;
     });

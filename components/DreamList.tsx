@@ -20,6 +20,7 @@ interface Dream {
     hashtag2: Hashtag;
     hashtag3: Hashtag;
   };
+  hashtagsArray?: { id: string; label: string }[];
   dreamType?: string;
   emotionBefore?: string[];
   emotionAfter?: string[];
@@ -272,14 +273,20 @@ export default function DreamList() {
 
           {/* Hashtags */}
           <View style={styles.hashtagsContainer}>
-            {dream.hashtags?.hashtag1?.label && (
-              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag1.label}</Chip>
-            )}
-            {dream.hashtags?.hashtag2?.label && (
-              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag2.label}</Chip>
-            )}
-            {dream.hashtags?.hashtag3?.label && (
-              <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag3.label}</Chip>
+            {dream.hashtagsArray && Array.isArray(dream.hashtagsArray) ? (
+              dream.hashtagsArray.map((h, i) => h?.label ? <Chip key={`chip-${i}`} compact style={styles.hashtag} textStyle={chipTextStyle}>#{h.label}</Chip> : null)
+            ) : (
+              <>
+                {dream.hashtags?.hashtag1?.label && (
+                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag1.label}</Chip>
+                )}
+                {dream.hashtags?.hashtag2?.label && (
+                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag2.label}</Chip>
+                )}
+                {dream.hashtags?.hashtag3?.label && (
+                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag3.label}</Chip>
+                )}
+              </>
             )}
           </View>
         </View>

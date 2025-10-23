@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, View, Text } from 'react-native';
-import { TextInput, Chip, Button, Card, SegmentedButtons } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Card, Chip, SegmentedButtons, TextInput } from 'react-native-paper';
 
 interface Hashtag {
   id: string;
@@ -30,6 +29,7 @@ interface Dream {
   sleepQuality?: string;
   personalMeaning?: string;
   overallTone?: string;
+  hashtagsArray?: { id: string; label: string }[];
 }
 
 const DREAM_TYPE_ICONS: { [key: string]: string } = {
@@ -47,7 +47,7 @@ export default function TabThreeScreen() {
   const [allHashtags, setAllHashtags] = useState<string[]>([]);
   const [allEmotions, setAllEmotions] = useState<string[]>([]);
   const [allKeywords, setAllKeywords] = useState<string[]>([]);
-  
+
   // Filtres avancés
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTone, setFilterTone] = useState<string>('all');
@@ -64,9 +64,14 @@ export default function TabThreeScreen() {
       // Extraire tous les hashtags
       const hashtags = new Set<string>();
       validDreams.forEach(dream => {
-        if (dream.hashtags?.hashtag1?.label) hashtags.add(dream.hashtags.hashtag1.label);
-        if (dream.hashtags?.hashtag2?.label) hashtags.add(dream.hashtags.hashtag2.label);
-        if (dream.hashtags?.hashtag3?.label) hashtags.add(dream.hashtags.hashtag3.label);
+        // Support new array-based hashtags (hashtagsArray) and legacy fields
+        if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
+          dream.hashtagsArray.forEach((h: any) => { if (h?.label) hashtags.add(h.label); });
+        } else {
+          if (dream.hashtags?.hashtag1?.label) hashtags.add(dream.hashtags.hashtag1.label);
+          if (dream.hashtags?.hashtag2?.label) hashtags.add(dream.hashtags.hashtag2.label);
+          if (dream.hashtags?.hashtag3?.label) hashtags.add(dream.hashtags.hashtag3.label);
+        }
       });
       setAllHashtags(Array.from(hashtags).sort());
 
@@ -106,18 +111,23 @@ export default function TabThreeScreen() {
         const text = dream.dreamText.toLowerCase();
         const location = dream.location?.toLowerCase() || '';
         const characters = dream.characters?.toLowerCase() || '';
-        const h1 = dream.hashtags?.hashtag1?.label?.toLowerCase() || '';
-        const h2 = dream.hashtags?.hashtag2?.label?.toLowerCase() || '';
-        const h3 = dream.hashtags?.hashtag3?.label?.toLowerCase() || '';
+        // Build hashtag search string from new array or legacy fields
+        let hashtagSearch = '';
+        if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
+          hashtagSearch = dream.hashtagsArray.map((h: any) => h.label?.toLowerCase()).filter(Boolean).join(' ');
+        } else {
+          const h1 = dream.hashtags?.hashtag1?.label?.toLowerCase() || '';
+          const h2 = dream.hashtags?.hashtag2?.label?.toLowerCase() || '';
+          const h3 = dream.hashtags?.hashtag3?.label?.toLowerCase() || '';
+          hashtagSearch = [h1, h2, h3].filter(Boolean).join(' ');
+        }
         const keywords = dream.keywords?.join(' ').toLowerCase() || '';
-        
-        return text.includes(searchTerm) || 
-               location.includes(searchTerm) || 
-               characters.includes(searchTerm) ||
-               h1.includes(searchTerm) || 
-               h2.includes(searchTerm) || 
-               h3.includes(searchTerm) ||
-               keywords.includes(searchTerm);
+
+        return text.includes(searchTerm) ||
+          location.includes(searchTerm) ||
+          characters.includes(searchTerm) ||
+          hashtagSearch.includes(searchTerm) ||
+          keywords.includes(searchTerm);
       });
     }
 
@@ -162,7 +172,7 @@ export default function TabThreeScreen() {
 
   const renderDreamCard = (dream: Dream, index: number) => {
     const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
-    
+
     return (
       <Card key={index} style={styles.dreamCard}>
         <Card.Content>
@@ -206,14 +216,20 @@ export default function TabThreeScreen() {
           </View>
 
           <View style={styles.hashtagsContainer}>
-            {dream.hashtags?.hashtag1?.label && (
-              <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag1.label}</Chip>
-            )}
-            {dream.hashtags?.hashtag2?.label && (
-              <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag2.label}</Chip>
-            )}
-            {dream.hashtags?.hashtag3?.label && (
-              <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag3.label}</Chip>
+            {dream.hashtagsArray && Array.isArray(dream.hashtagsArray) ? (
+              dream.hashtagsArray.map((h: any, i: number) => h?.label ? <Chip key={`chip-${i}`} compact style={styles.hashtag}>#{h.label}</Chip> : null)
+            ) : (
+              <>
+                {dream.hashtags?.hashtag1?.label && (
+                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag1.label}</Chip>
+                )}
+                {dream.hashtags?.hashtag2?.label && (
+                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag2.label}</Chip>
+                )}
+                {dream.hashtags?.hashtag3?.label && (
+                  <Chip compact style={styles.hashtag}>#{dream.hashtags.hashtag3.label}</Chip>
+                )}
+              </>
             )}
           </View>
         </Card.Content>
@@ -235,7 +251,7 @@ export default function TabThreeScreen() {
           placeholder="Texte, hashtag, lieu, personnage..."
           right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} /> : undefined}
         />
-        
+
         <Button
           mode={showAdvancedFilters ? 'contained' : 'outlined'}
           onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
