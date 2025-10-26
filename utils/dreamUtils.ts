@@ -68,8 +68,17 @@ export const getToneLabel = (tone: ToneType): string => {
  * Formate une date en chaîne lisible en français
  */
 export const formatDreamDate = (dateString: string): string => {
+  if (!dateString || typeof dateString !== 'string') {
+    console.warn('Invalid date string provided');
+    return 'Date invalide';
+  }
+  
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+    
     return date.toLocaleDateString('fr-FR', {
       weekday: 'long',
       year: 'numeric',
@@ -77,7 +86,7 @@ export const formatDreamDate = (dateString: string): string => {
       day: 'numeric',
     });
   } catch (error) {
-    console.error('Erreur formatage date:', error);
+    console.error('Date formatting error');
     return 'Date invalide';
   }
 };
@@ -86,8 +95,17 @@ export const formatDreamDate = (dateString: string): string => {
  * Formate une date courte pour l'affichage dans les listes
  */
 export const formatShortDate = (dateString: string): string => {
+  if (!dateString || typeof dateString !== 'string') {
+    console.warn('Invalid date string provided');
+    return 'Date invalide';
+  }
+  
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+    
     return date.toLocaleDateString('fr-FR', {
       weekday: 'short',
       day: 'numeric',
@@ -95,7 +113,7 @@ export const formatShortDate = (dateString: string): string => {
       year: 'numeric',
     });
   } catch (error) {
-    console.error('Erreur formatage date courte:', error);
+    console.error('Short date formatting error');
     return 'Date invalide';
   }
 };
@@ -177,12 +195,11 @@ export const calculateAverage = (dreams: Dream[], property: keyof Dream): number
     const sum = values.reduce((acc, val) => acc + val, 0);
     const average = sum / values.length;
     
-    // Vérifier que le résultat est valide
     if (!isFinite(average)) return 0;
     
-    return Math.round(average * 10) / 10; // Arrondi à 1 décimale
+    return Math.round(average * 10) / 10;
   } catch (error) {
-    console.error('Erreur calcul moyenne');
+    console.error('Average calculation error');
     return 0;
   }
 };

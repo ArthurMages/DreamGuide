@@ -25,15 +25,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (error) {
-      console.error('Erreur lors du chargement des polices:', error);
-      // Ne pas faire planter l'app, continuer avec les polices par défaut
+      console.error('Font loading failed');
     }
   }, [error]);
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync().catch((error) => {
-        console.error('Erreur lors de la fermeture du splash screen:', error);
+      SplashScreen.hideAsync().catch(() => {
+        console.error('Splash screen hide error');
       });
     }
   }, [loaded]);

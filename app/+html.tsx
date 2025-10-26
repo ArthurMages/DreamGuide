@@ -26,15 +26,22 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <body>{children}</body>
       </html>
     );
-  } catch (error) {
-    console.error('Erreur lors du rendu HTML racine');
+  } catch {
+    console.error('HTML root render error');
     return (
       <html lang="en">
         <head>
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>DreamGuide - Error</title>
         </head>
-        <body>{children}</body>
+        <body>
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h1>Application Error</h1>
+            <p>Please refresh the page or try again later.</p>
+          </div>
+          {children}
+        </body>
       </html>
     );
   }

@@ -42,6 +42,11 @@ const THEME_COLORS: Record<'light' | 'dark', ThemeColors> = {
  * @returns Les couleurs correspondant au thème sélectionné
  */
 export const useAppTheme = (): ThemeColors => {
-  const { theme } = useThemeStore();
-  return THEME_COLORS[theme ?? 'light'];
+  try {
+    const { theme } = useThemeStore();
+    return THEME_COLORS[theme] || THEME_COLORS.light;
+  } catch (error) {
+    console.error('Theme access failed');
+    return THEME_COLORS.light;
+  }
 };

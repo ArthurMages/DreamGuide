@@ -1,6 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 
 import ThemeToggle from '../../components/ThemeToggle';
@@ -36,18 +35,16 @@ export default function TabLayout() {
     tabBarInactiveTintColor: theme.text,
     headerShown: true,
     headerStyle: {
-      backgroundColor: theme.accent, // Utilise la couleur d'accent pour le header
+      backgroundColor: theme.background,
       elevation: 4,
       shadowOpacity: 0.25,
       shadowRadius: 3.84,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24,
     },
-    headerTintColor: theme.background, // Texte blanc/clair pour contraster avec l'accent
+    headerTintColor: theme.text,
     headerTitleStyle: {
-      color: theme.background,
+      color: theme.text,
       fontWeight: 'bold' as const,
       fontSize: 20,
       letterSpacing: 0.5,
@@ -64,17 +61,13 @@ export default function TabLayout() {
   };
 
   return (
-    <>
-      <StatusBar style={theme.text === '#ffffff' ? 'light' : 'dark'} />
-      <Tabs screenOptions={screenOptions}>
+    <Tabs screenOptions={screenOptions}>
         <Tabs.Screen
           name="index"
           options={{
             title: '✨ Nouveau Rêve',
             headerTitle: '✨ Nouveau Rêve',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
+            headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="plus-circle" color={color} focused={focused} />,
           }}
         />
@@ -83,9 +76,7 @@ export default function TabLayout() {
           options={{
             title: '📖 Mes Rêves',
             headerTitle: '📖 Mes Rêves',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
+            headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="book" color={color} focused={focused} />,
           }}
         />
@@ -94,9 +85,7 @@ export default function TabLayout() {
           options={{
             title: '🔍 Rechercher',
             headerTitle: '🔍 Rechercher',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
+            headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
           }}
         />
@@ -105,9 +94,7 @@ export default function TabLayout() {
           options={{
             title: '📊 Statistiques',
             headerTitle: '📊 Statistiques',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
+            headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="bar-chart" color={color} focused={focused} />,
           }}
         />
@@ -116,24 +103,19 @@ export default function TabLayout() {
           options={{
             title: '📤 Exporter',
             headerTitle: '📤 Exporter',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
+            headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
-            title: '⚙️ Notifications',
-            headerTitle: '⚙️ Notifications',
-            headerRight: () => (
-              <ThemeToggle />
-            ),
-            tabBarIcon: ({ color, focused }) => <TabBarIcon name="bell" color={color} focused={focused} />,
+            title: '🔔 Notifications',
+            headerTitle: '🔔 Notifications',
+            headerRight: () => <ThemeToggle />,
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="cog" color={color} focused={focused} />,
           }}
         />
       </Tabs>
-    </>
   );
 }

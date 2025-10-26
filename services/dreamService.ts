@@ -12,10 +12,16 @@ import type { Dream } from '@/types/Dream';
 export const getAllDreams = async (): Promise<Dream[]> => {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
-    const dreams: Dream[] = data ? JSON.parse(data) : [];
+    if (!data) return [];
+    
+    const dreams: Dream[] = JSON.parse(data);
+    if (!Array.isArray(dreams)) {
+      throw new Error('Invalid dreams data format');
+    }
+    
     return dreams.filter(dream => dream?.dreamText?.trim());
-  } catch (error) {
-    console.error('Erreur lors de la récupération des rêves:', error);
+  } catch {
+    console.error('Failed to retrieve dreams');
     return [];
   }
 };
@@ -24,17 +30,20 @@ export const getAllDreams = async (): Promise<Dream[]> => {
  * Sauvegarde un nouveau rêve
  */
 export const saveDream = async (dream: Dream): Promise<void> => {
+  if (!dream || !dream.dreamText?.trim()) {
+    throw new Error('Invalid dream data');
+  }
+  
   try {
     const existingDreams = await getAllDreams();
-    existingDreams.push(dream);
-    await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(existingDreams));
+    const updatedDreams = [...existingDreams, dream];
+    await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(updatedDreams));
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde du rêve');
-    // Vérifier l'intégrité des données avant de lever l'erreur
+    console.error('Failed to save dream');
     if (error instanceof Error && error.message.includes('storage')) {
-      throw new Error('Espace de stockage insuffisant');
+      throw new Error('Insufficient storage space');
     }
-    throw new Error('Impossible de sauvegarder le rêve');
+    throw new Error('Failed to save dream');
   }
 };
 
@@ -42,21 +51,25 @@ export const saveDream = async (dream: Dream): Promise<void> => {
  * Met à jour un rêve existant
  */
 export const updateDream = async (index: number, updatedDream: Dream): Promise<void> => {
+  if (!updatedDream || !updatedDream.dreamText?.trim()) {
+    throw new Error('Invalid dream data');
+  }
+  
   try {
     const dreams = await getAllDreams();
-    if (index >= 0 && index < dreams.length) {
-      dreams[index] = updatedDream;
-      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreams));
-    } else {
-      throw new Error('Index de rêve invalide');
+    if (index < 0 || index >= dreams.length) {
+      throw new Error('Invalid dream index');
     }
+    
+    const updatedDreams = [...dreams];
+    updatedDreams[index] = updatedDream;
+    await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(updatedDreams));
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du rêve');
-    // Vérifier si l'erreur est due à un index invalide
-    if (error instanceof Error && error.message.includes('Index')) {
-      throw error; // Propager l'erreur d'index
+    console.error('Failed to update dream');
+    if (error instanceof Error && error.message.includes('Invalid')) {
+      throw error;
     }
-    throw new Error('Impossible de mettre à jour le rêve');
+    throw new Error('Failed to update dream');
   }
 };
 
@@ -66,18 +79,17 @@ export const updateDream = async (index: number, updatedDream: Dream): Promise<v
 export const deleteDream = async (index: number): Promise<void> => {
   try {
     const dreams = await getAllDreams();
-    if (index >= 0 && index < dreams.length) {
-      dreams.splice(index, 1);
-      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreams));
-    } else {
-      throw new Error('Index de rêve invalide');
+    if (index < 0 || index >= dreams.length) {
+      throw new Error('Invalid dream index');
     }
+    
+    const updatedDreams = dreams.filter((_, i) => i !== index);
+    await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(updatedDreams));
   } catch (error) {
-    console.error('Erreur lors de la suppression du rêve');
-    // Vérifier si l'erreur est due à un index invalide
-    if (error instanceof Error && error.message.includes('Index')) {
-      throw error; // Propager l'erreur d'index
+    console.error('Failed to delete dream');
+    if (error instanceof Error && error.message.includes('Invalid')) {
+      throw error;
     }
-    throw new Error('Impossible de supprimer le rêve');
+    throw new Error('Failed to delete dream');
   }
 };

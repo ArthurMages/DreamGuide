@@ -8,6 +8,7 @@ import { useAppTheme } from '../hooks/useAppTheme';
 import { ThemedCard } from './ThemedCard';
 import { STORAGE_KEYS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants/AppConstants';
 import { getDreamTypeIcon, getToneColor, formatShortDate, extractHashtags } from '../utils/dreamUtils';
+import { updateDream, deleteDream as deleteDreamService } from '../services/dreamService';
 import type { Dream } from '../types/Dream';
 
 export default function DreamList() {
@@ -17,34 +18,37 @@ export default function DreamList() {
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  // Chargement des rêves depuis AsyncStorage
   const fetchDreams = async () => {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
-      const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
-      const validDreams = dreamFormDataArray.filter(dream => dream?.dreamText?.trim());
+      if (!data) {
+        setDreams([]);
+        return;
+      }
+      
+      const dreamFormDataArray: Dream[] = JSON.parse(data);
+      if (!Array.isArray(dreamFormDataArray)) {
+        setDreams([]);
+        return;
+      }
+      
+      const validDreams = dreamFormDataArray.filter(dream => 
+        dream && typeof dream === 'object' && dream.dreamText?.trim()
+      );
       setDreams(validDreams);
-    } catch (error) {
-      console.error('Erreur lors du chargement des rêves');
+    } catch {
+      console.error('Failed to load dreams');
       setDreams([]);
-      // Notification utilisateur en cas d'erreur critique
-      Alert.alert('Erreur', 'Impossible de charger les rêves. Veuillez redémarrer l\'application.');
     }
   };
 
   const memoizedFetchDreams = useCallback(() => {
-    try {
-      fetchDreams();
-    } catch (error) {
-      console.error('Erreur lors du chargement des rêves');
-      setDreams([]);
-    }
+    fetchDreams();
   }, []);
 
   useFocusEffect(memoizedFetchDreams);
 
-  // Suppression avec confirmation utilisateur
-  const deleteDream = async (index: number) => {
+  const handleDeleteDream = async (index: number) => {
     Alert.alert(
       'Supprimer le rêve',
       'Es-tu sûr de vouloir supprimer ce rêve ?',
@@ -55,17 +59,12 @@ export default function DreamList() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
-              const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
-              dreamFormDataArray.splice(index, 1);
-              await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreamFormDataArray));
-              fetchDreams();
-              Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_DELETED);
-            } catch (error) {
-              console.error('Erreur lors de la suppression:', error);
-              Alert.alert('Erreur', ERROR_MESSAGES.DELETE_ERROR);
-              // Recharger les données pour s'assurer de la cohérence
-              fetchDreams();
+              await deleteDreamService(index);
+              await fetchDreams();
+              Alert.alert('Succès', 'Rêve supprimé');
+            } catch {
+              console.error('Failed to delete dream');
+              Alert.alert('Erreur', 'Impossible de supprimer le rêve');
             }
           },
         },
@@ -78,24 +77,23 @@ export default function DreamList() {
     setEditingDream({ ...dreams[index] });
   };
 
-  // Sauvegarde des modifications en mode édition
   const saveEdit = async () => {
     if (editingIndex === null || !editingDream) return;
 
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
-      const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
-      dreamFormDataArray[editingIndex] = editingDream;
-      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreamFormDataArray));
-      fetchDreams();
+      if (!editingDream?.dreamText?.trim()) {
+        Alert.alert('Erreur', 'La description du rêve est requise');
+        return;
+      }
+      
+      await updateDream(editingIndex, editingDream);
+      await fetchDreams();
       setEditingIndex(null);
       setEditingDream(null);
-      Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_UPDATED);
-    } catch (error) {
-      console.error('Erreur lors de la modification');
-      Alert.alert('Erreur', ERROR_MESSAGES.SAVE_ERROR);
-      // Recharger les données pour maintenir la cohérence
-      fetchDreams();
+      Alert.alert('Succès', 'Rêve modifié');
+    } catch {
+      console.error('Failed to update dream');
+      Alert.alert('Erreur', 'Impossible de modifier le rêve');
     }
   };
 
@@ -108,7 +106,6 @@ export default function DreamList() {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  // Rendu d'une carte de rêve avec expansion/collapse et actions
   const renderDreamCard = (dream: Dream, index: number) => {
     const isExpanded = expandedIndex === index;
     const dreamIcon = getDreamTypeIcon(dream.dreamType || 'ordinary');
@@ -119,7 +116,6 @@ export default function DreamList() {
     return (
       <ThemedCard key={index} style={[styles.dreamCard, { borderLeftColor: toneColor, borderLeftWidth: 4 }]}>
         <View style={{ padding: 16 }}>
-          {/* En-tête: icône, date, lieu, actions */}
           <View style={styles.cardHeader}>
             <View style={styles.headerLeft}>
               <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
@@ -149,17 +145,15 @@ export default function DreamList() {
                 icon="delete"
                 size={20}
                 iconColor="#ff4444"
-                onPress={() => deleteDream(index)}
+                onPress={() => handleDeleteDream(index)}
               />
             </View>
           </View>
 
-          {/* Contenu principal du rêve */}
           <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={isExpanded ? undefined : 3}>
             {dream.dreamText}
           </Text>
 
-          {/* Chips intensité/clarté */}
           <View style={styles.quickMeta}>
             {dream.emotionalIntensity && (
               <Chip icon="lightning-bolt" compact style={styles.metaChip} textStyle={chipTextStyle}>
@@ -173,17 +167,14 @@ export default function DreamList() {
             )}
           </View>
 
-          {/* Section détails (personnages, émotions, etc.) */}
           {isExpanded && (
             <View style={[styles.expandedContent, { borderTopColor: theme.border }]}>
-
               {dream.characters && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>👥 Personnages:</Text>
                   <Text style={[styles.detailText, { color: theme.text }]}>{dream.characters}</Text>
                 </View>
               )}
-
 
               {dream.emotionBefore && dream.emotionBefore.length > 0 && (
                 <View style={styles.detailSection}>
@@ -198,7 +189,6 @@ export default function DreamList() {
                 </View>
               )}
 
-
               {dream.emotionAfter && dream.emotionAfter.length > 0 && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>😊 Après le rêve:</Text>
@@ -212,14 +202,12 @@ export default function DreamList() {
                 </View>
               )}
 
-
               {dream.sleepQuality && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>😴 Sommeil:</Text>
-                  <Text style={[styles.detailText, { color: theme.text }]}>{dream.sleepQuality}</Text>
+                  <Text style={[styles.detailText, { color: theme.text }]}>{dream.sleepQuality}/10</Text>
                 </View>
               )}
-
 
               {dream.keywords && dream.keywords.length > 0 && (
                 <View style={styles.detailSection}>
@@ -234,6 +222,18 @@ export default function DreamList() {
                 </View>
               )}
 
+              {dreamHashtags.length > 0 && (
+                <View style={styles.detailSection}>
+                  <Text style={[styles.detailLabel, { color: theme.text }]}>#️⃣ Hashtags:</Text>
+                  <View style={styles.emotionChips}>
+                    {dreamHashtags.map((hashtag, i) => (
+                      <Chip key={i} compact style={styles.hashtagChip} textStyle={chipTextStyle}>
+                        #{hashtag}
+                      </Chip>
+                    ))}
+                  </View>
+                </View>
+              )}
 
               {dream.personalMeaning && (
                 <View style={styles.detailSection}>
@@ -243,37 +243,21 @@ export default function DreamList() {
               )}
             </View>
           )}
-
-          {/* Hashtags en bas de carte */}
-          <View style={styles.hashtagsContainer}>
-            {dreamHashtags.map((hashtag, i) => (
-              <Chip 
-                key={`hashtag-${i}`} 
-                compact 
-                style={styles.hashtag} 
-                textStyle={chipTextStyle}
-              >
-                #{hashtag}
-              </Chip>
-            ))}
-          </View>
         </View>
       </ThemedCard>
     );
   };
 
   return (
-    <>
-      <ScrollView
-        style={[styles.scrollContainer, { backgroundColor: theme.background }]}
-        contentContainerStyle={styles.contentContainer}
-      >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {dreams.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🌙</Text>
-            <Text style={[styles.emptyText, { color: theme.text }]}>Aucun rêve enregistré</Text>
-            <Text style={[styles.emptySubtext, { color: theme.text }]}>
-              Allez dans l'onglet "Nouveau Rêve" pour commencer votre journal
+            <Text style={[styles.emptyText, { color: theme.text }]}>
+              Aucun rêve enregistré pour le moment.
+            </Text>
+            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
+              Commencez par créer votre premier rêve !
             </Text>
           </View>
         ) : (
@@ -281,110 +265,46 @@ export default function DreamList() {
         )}
       </ScrollView>
 
-      {/* Modal d'édition rapide des champs principaux */}
       <Modal
         visible={editingIndex !== null}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={cancelEdit}
       >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>Modifier le rêve</Text>
-            <ScrollView>
-              {editingDream && (
-                <>
-                  <TextInput
-                    label="Description du rêve"
-                    value={editingDream.dreamText}
-                    onChangeText={(text) => setEditingDream({ ...editingDream, dreamText: text })}
-                    mode="outlined"
-                    multiline
-                    numberOfLines={6}
-                    style={[styles.modalInput, { backgroundColor: theme.card }]}
-                    outlineColor={theme.border}
-                    activeOutlineColor={theme.accent}
-                    textColor={theme.text}
-                    theme={{
-                      colors: {
-                        background: theme.card,
-                        onSurfaceVariant: theme.text,
-                      }
-                    }}
-                  />
-                  <TextInput
-                    label="Lieu"
-                    value={editingDream.location || ''}
-                    onChangeText={(text) => setEditingDream({ ...editingDream, location: text })}
-                    mode="outlined"
-                    style={[styles.modalInput, { backgroundColor: theme.card }]}
-                    outlineColor={theme.border}
-                    activeOutlineColor={theme.accent}
-                    textColor={theme.text}
-                    theme={{
-                      colors: {
-                        background: theme.card,
-                        onSurfaceVariant: theme.text,
-                      }
-                    }}
-                  />
-                  <TextInput
-                    label="Personnages"
-                    value={editingDream.characters || ''}
-                    onChangeText={(text) => setEditingDream({ ...editingDream, characters: text })}
-                    mode="outlined"
-                    style={[styles.modalInput, { backgroundColor: theme.card }]}
-                    outlineColor={theme.border}
-                    activeOutlineColor={theme.accent}
-                    textColor={theme.text}
-                    theme={{
-                      colors: {
-                        background: theme.card,
-                        onSurfaceVariant: theme.text,
-                      }
-                    }}
-                  />
-                  <TextInput
-                    label="Signification personnelle"
-                    value={editingDream.personalMeaning || ''}
-                    onChangeText={(text) => setEditingDream({ ...editingDream, personalMeaning: text })}
-                    mode="outlined"
-                    multiline
-                    numberOfLines={4}
-                    style={[styles.modalInput, { backgroundColor: theme.card }]}
-                    outlineColor={theme.border}
-                    activeOutlineColor={theme.accent}
-                    textColor={theme.text}
-                    theme={{
-                      colors: {
-                        background: theme.card,
-                        onSurfaceVariant: theme.text,
-                      }
-                    }}
-                  />
-                </>
-              )}
-            </ScrollView>
+            
+            <TextInput
+              value={editingDream?.dreamText || ''}
+              onChangeText={(text) => setEditingDream(prev => prev ? { ...prev, dreamText: text } : null)}
+              mode="outlined"
+              multiline
+              numberOfLines={6}
+              placeholder="Description du rêve..."
+              style={styles.editInput}
+            />
+            
             <View style={styles.modalButtons}>
               <Button mode="outlined" onPress={cancelEdit} style={styles.modalButton}>
                 Annuler
               </Button>
               <Button mode="contained" onPress={saveEdit} style={styles.modalButton}>
-                Enregistrer
+                Sauvegarder
               </Button>
             </View>
           </View>
         </View>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
+  container: {
     flex: 1,
   },
-  contentContainer: {
+  scrollContent: {
     padding: 16,
   },
   dreamCard: {
@@ -393,7 +313,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   headerLeft: {
@@ -406,16 +326,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dreamIcon: {
-    fontSize: 32,
+    fontSize: 24,
     marginRight: 12,
   },
   dreamDate: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   dreamLocation: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 14,
     opacity: 0.7,
   },
   dreamText: {
@@ -427,15 +346,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   metaChip: {
-    opacity: 0.8,
+    marginRight: 8,
   },
   expandedContent: {
-    marginTop: 12,
-    paddingTop: 12,
     borderTopWidth: 1,
+    paddingTop: 16,
+    marginTop: 8,
   },
   detailSection: {
     marginBottom: 12,
@@ -443,76 +362,69 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   detailText: {
     fontSize: 14,
     lineHeight: 20,
-    opacity: 0.9,
   },
   emotionChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
   },
   emotionChip: {
-    opacity: 0.8,
+    marginRight: 4,
+    marginBottom: 4,
   },
   keywordChip: {
-    opacity: 0.8,
+    marginRight: 4,
+    marginBottom: 4,
   },
-  hashtagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  hashtag: {
-    opacity: 0.8,
+  hashtagChip: {
+    marginRight: 4,
+    marginBottom: 4,
   },
   emptyState: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 60,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    opacity: 0.7,
     textAlign: 'center',
-    paddingHorizontal: 40,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
-    borderRadius: 12,
+    width: '90%',
+    maxWidth: 400,
     padding: 20,
-    maxHeight: '80%',
+    borderRadius: 12,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
+    textAlign: 'center',
   },
-  modalInput: {
-    marginBottom: 12,
+  editInput: {
+    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
     gap: 12,
   },
   modalButton: {

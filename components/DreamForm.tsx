@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { STORAGE_KEYS, DREAM_TYPES, EMOTIONS, SLIDER_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES, EMOTIONAL_INTENSITY_LABELS, CLARITY_LABELS } from '../constants/AppConstants';
 import { generateHashtagId, getSleepQualityLabel, getEmotionalIntensityLabel, getClarityLabel, cleanHashtags, cleanKeywords, validateDream } from '../utils/dreamUtils';
+import { saveDream } from '../services/dreamService';
 import type { Dream, DreamType, ToneType } from '../types/Dream';
 
 const styles = StyleSheet.create({
@@ -129,16 +130,14 @@ interface QualitySliderProps {
 }
 
 // Slider avec couleur dynamique selon la valeur (rouge/orange/vert)
-const QualitySlider: React.FC<QualitySliderProps> = ({ value, onChange }) => {
+const QualitySlider: React.FC<QualitySliderProps> = React.memo(({ value, onChange }) => {
   const theme = useAppTheme();
 
-  const getSliderColor = (value: number): string => {
+  const sliderColor = React.useMemo(() => {
     if (value <= 4) return '#D32F2F'; // Rouge
     if (value <= 7) return '#F57C00'; // Orange
     return '#4CAF50'; // Vert
-  };
-
-  const sliderColor = getSliderColor(value);
+  }, [value]);
 
   return (
     <View style={styles.sliderContainer}>
@@ -156,7 +155,7 @@ const QualitySlider: React.FC<QualitySliderProps> = ({ value, onChange }) => {
       />
     </View>
   );
-};
+});
 
 // Formulaire principal de création de rêve avec 15+ champs et validation
 export default function DreamForm() {
@@ -202,16 +201,12 @@ export default function DreamForm() {
     }
 
     try {
-      const existingData = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
-      const formDataArray: Dream[] = existingData ? JSON.parse(existingData) : [];
-
       const cleanedHashtags = cleanHashtags(hashtags);
       const hashtagObjs = cleanedHashtags.map(label => ({
         id: generateHashtagId(label),
         label
       }));
 
-      // Support ancien format hashtags pour rétrocompatibilité
       const hashtagsLegacy: any = {};
       if (hashtagObjs[0]) hashtagsLegacy.hashtag1 = hashtagObjs[0];
       if (hashtagObjs[1]) hashtagsLegacy.hashtag2 = hashtagObjs[1];
@@ -237,16 +232,12 @@ export default function DreamForm() {
         createdAt: new Date().toISOString(),
       };
 
-      formDataArray.push(newDream);
-      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(formDataArray));
-      
+      await saveDream(newDream);
       Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_SAVED);
       resetForm();
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+    } catch {
+      console.error('Dream save failed');
       Alert.alert('Erreur', ERROR_MESSAGES.SAVE_ERROR);
-      // Ne pas reset le formulaire en cas d'erreur pour éviter la perte de données
-      return;
     }
   };
 

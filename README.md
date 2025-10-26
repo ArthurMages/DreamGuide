@@ -1,42 +1,43 @@
-# 🌙 DreamGuide - Journal de Rêves Mobile
+# 🌙 DreamGuide - Technical Documentation
 
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.4-blue.svg)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-~54.0.10-black.svg)](https://expo.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-~5.9.2-blue.svg)](https://www.typescriptlang.org/)
 [![React Native Paper](https://img.shields.io/badge/React%20Native%20Paper-5.14.5-purple.svg)](https://reactnativepaper.com/)
 
-Application mobile React Native/Expo pour journaliser et analyser ses rêves avec fonctionnalités avancées de recherche, statistiques et export.
+A React Native/Expo mobile application for dream journaling and analysis with advanced search, statistics, and export capabilities.
 
-## 📋 Table des Matières
+## 📋 Table of Contents
 
-- [🚀 Démarrage Rapide](#-démarrage-rapide)
+- [🚀 Quick Start](#-quick-start)
 - [🏗️ Architecture](#️-architecture)
-- [📱 Fonctionnalités](#-fonctionnalités)
-- [🛠️ Technologies](#️-technologies)
+- [📊 Data Models](#-data-models)
+- [🛠️ Tech Stack](#️-tech-stack)
 - [📦 Installation](#-installation)
 - [🔧 Configuration](#-configuration)
-- [📊 Structure des Données](#-structure-des-données)
-- [🎨 Thème et UI](#-thème-et-ui)
+- [🎨 Theme System](#-theme-system)
+- [📱 Components](#-components)
+- [🔄 State Management](#-state-management)
+- [💾 Data Persistence](#-data-persistence)
+- [📤 Export System](#-export-system)
 - [🔔 Notifications](#-notifications)
-- [📤 Export de Données](#-export-de-données)
-- [🧪 Tests](#-tests)
-- [🚀 Déploiement](#-déploiement)
-- [🤝 Contribution](#-contribution)
+- [🧪 Testing](#-testing)
+- [🚀 Deployment](#-deployment)
 
-## 🚀 Démarrage Rapide
+## 🚀 Quick Start
 
 ```bash
-# Cloner le projet
-git clone [URL_DU_REPO]
+# Clone repository
+git clone [REPO_URL]
 cd DreamGuide
 
-# Installer les dépendances
+# Install dependencies
 npm install
 
-# Démarrer l'application
+# Start development server
 npm start
 
-# Ou pour une plateforme spécifique
+# Platform-specific builds
 npm run android  # Android
 npm run ios      # iOS
 npm run web      # Web
@@ -44,179 +45,218 @@ npm run web      # Web
 
 ## 🏗️ Architecture
 
-### Structure du Projet
+### Project Structure
 
 ```
 DreamGuide/
-├── app/                    # Écrans et navigation (Expo Router)
-│   ├── (tabs)/            # Navigation par onglets
-│   │   ├── index.tsx      # Création de rêve
-│   │   ├── two.tsx        # Liste des rêves
-│   │   ├── three.tsx      # Recherche
-│   │   ├── stats.tsx      # Statistiques
-│   │   ├── export.tsx     # Export
-│   │   └── settings.tsx   # Paramètres
-│   └── _layout.tsx        # Layout racine
-├── components/            # Composants réutilisables
-│   ├── DreamForm.tsx      # Formulaire de création
-│   ├── DreamList.tsx      # Liste des rêves
-│   ├── StatisticsScreen.tsx # Écran statistiques
-│   ├── ExportDreams.tsx   # Fonctionnalités d'export
-│   └── NotificationSettings.tsx # Configuration notifications
-├── constants/             # Constantes de l'application
-├── hooks/                 # Hooks personnalisés
-├── services/              # Services et API
-├── store/                 # Gestion d'état (Zustand)
-├── types/                 # Types TypeScript
-└── utils/                 # Fonctions utilitaires
+├── app/                           # Expo Router screens
+│   ├── (tabs)/                   # Tab navigation
+│   │   ├── index.tsx             # Dream creation form
+│   │   ├── two.tsx               # Dreams list
+│   │   ├── three.tsx             # Search functionality
+│   │   ├── stats.tsx             # Statistics dashboard
+│   │   ├── export.tsx            # Export features
+│   │   └── settings.tsx          # Notification settings
+│   ├── _layout.tsx               # Root layout
+│   ├── +html.tsx                 # Web HTML template
+│   └── +not-found.tsx            # 404 page
+├── components/                    # Reusable components
+│   ├── DreamForm.tsx             # Main form component
+│   ├── DreamList.tsx             # Dreams listing
+│   ├── ExportDreams.tsx          # Export functionality
+│   ├── StatisticsScreen.tsx      # Stats visualization
+│   ├── NotificationSettings.tsx  # Notification config
+│   ├── ThemedCard.tsx            # Themed card wrapper
+│   ├── ThemedScreen.tsx          # Themed screen wrapper
+│   ├── ThemeProvider.tsx         # Theme context provider
+│   ├── ThemeToggle.tsx           # Theme switcher
+│   └── ScrollAwareScreen.tsx     # Scroll-aware container
+├── constants/                     # App constants
+│   └── AppConstants.ts           # Global constants
+├── hooks/                         # Custom hooks
+│   └── useAppTheme.ts            # Theme hook
+├── services/                      # Business logic
+│   └── dreamService.ts           # Dream CRUD operations
+├── store/                         # State management
+│   └── themeStore.ts             # Theme state (Zustand)
+├── types/                         # TypeScript definitions
+│   └── Dream.ts                  # Dream interfaces
+├── utils/                         # Utility functions
+│   └── dreamUtils.ts             # Dream-related utilities
+├── assets/                        # Static assets
+│   ├── fonts/                    # Custom fonts
+│   └── images/                   # App icons and images
+├── app.json                       # Expo configuration
+├── package.json                   # Dependencies
+└── tsconfig.json                  # TypeScript config
 ```
 
-### Patterns Architecturaux
+### Architectural Patterns
 
-- **Expo Router** : Navigation basée sur le système de fichiers
-- **Component-Based Architecture** : Composants réutilisables et modulaires
-- **Custom Hooks** : Logique métier encapsulée
-- **Service Layer** : Abstraction des opérations de données
-- **Type-Safe** : TypeScript strict pour la robustesse
+- **File-based Routing**: Expo Router for navigation
+- **Component Composition**: Reusable, themed components
+- **Custom Hooks**: Encapsulated business logic
+- **Service Layer**: Data access abstraction
+- **Type Safety**: Strict TypeScript configuration
+- **Theme System**: Dynamic light/dark mode support
 
-## 📱 Fonctionnalités
+## 📊 Data Models
 
-### ✅ Fonctionnalités Principales
+### Core Dream Interface
 
-| Fonctionnalité | Description | Statut |
-|----------------|-------------|--------|
-| **Création de Rêves** | Formulaire complet avec 15+ champs | ✅ |
-| **Gestion des Rêves** | CRUD complet (Create, Read, Update, Delete) | ✅ |
-| **Recherche Avancée** | Filtres multiples et recherche textuelle | ✅ |
-| **Statistiques** | Analyses et graphiques détaillés | ✅ |
-| **Export Multi-Format** | TXT, CSV, JSON | ✅ |
-| **Notifications** | Rappels quotidiens personnalisables | ✅ |
-| **Thème Adaptatif** | Mode clair/sombre automatique | ✅ |
-| **Stockage Local** | Persistance avec AsyncStorage | ✅ |
+```typescript
+interface Dream {
+  // Core fields
+  dreamText: string;                    // Dream description (required)
+  isLucidDream: boolean;               // Lucid dream flag
+  todayDate: string;                   // Dream date (ISO string)
+  
+  // Classification
+  dreamType?: DreamType;               // Dream category
+  overallTone?: ToneType;              // Emotional tone
+  
+  // Context
+  location?: string;                   // Dream location
+  characters?: string;                 // People in dream
+  
+  // Emotional data
+  emotionBefore?: string[];            // Pre-sleep emotions
+  emotionAfter?: string[];             // Post-dream emotions
+  emotionalIntensity?: number;         // Scale 1-10
+  
+  // Quality metrics
+  clarity?: number;                    // Dream clarity 1-10
+  sleepQuality?: number;               // Sleep quality 1-10
+  
+  // Metadata
+  keywords?: string[];                 // Search keywords
+  personalMeaning?: string;            // User interpretation
+  createdAt?: string;                  // Creation timestamp
+  
+  // Hashtags (dual format for compatibility)
+  hashtags?: {                         // Legacy format
+    hashtag1?: Hashtag;
+    hashtag2?: Hashtag;
+    hashtag3?: Hashtag;
+  };
+  hashtagsArray?: Hashtag[];          // New array format
+}
+```
 
-### 📝 Détail des Onglets
+### Type Definitions
 
-#### 1. Nouveau Rêve
-- Formulaire avec validation en temps réel
-- 15+ champs : type, émotions, intensité, clarté, etc.
-- Sélecteur de date/heure
-- Sliders interactifs avec couleurs dynamiques
-- Gestion des hashtags et mots-clés
+```typescript
+type DreamType = 'ordinary' | 'lucid' | 'nightmare' | 'premonitory' | 'fantasy';
+type ToneType = 'positive' | 'neutral' | 'negative';
 
-#### 2. Mes Rêves
-- Liste paginée avec cartes extensibles
-- Actions : voir, modifier, supprimer
-- Indicateurs visuels (tonalité, type)
-- Modal d'édition rapide
-- Filtrage par métadonnées
+interface Hashtag {
+  id: string;                          // Unique identifier
+  label: string;                       // Display text
+}
 
-#### 3. Recherche
-- Barre de recherche intelligente
-- Filtres : type de rêve, tonalité, émotions
-- Suggestions rapides basées sur les hashtags
-- Résultats en temps réel
-- Compteur de résultats
+interface DreamStatistics {
+  total: number;
+  lucidCount: number;
+  lucidPercentage: number;
+  avgIntensity: number;
+  avgClarity: number;
+  dreamTypes: Record<DreamType, number>;
+  emotions: {
+    before: Record<string, number>;
+    after: Record<string, number>;
+  };
+  keywords: Record<string, number>;
+  sleepQuality: Record<string, number>;
+  toneDistribution: Record<ToneType, number>;
+}
+```
 
-#### 4. Statistiques
-- Vue d'ensemble : total, lucides, moyennes
-- Graphiques de distribution
-- Top émotions et mots-clés
-- Analyse de la qualité du sommeil
-- Tendances temporelles
+## 🛠️ Tech Stack
 
-#### 5. Export
-- Export TXT formaté pour lecture
-- Export CSV pour analyse Excel
-- Export JSON pour backup/migration
-- Partage direct multi-plateformes
-- Prévisualisation avant export
+### Core Framework
+```json
+{
+  "react": "19.1.0",
+  "react-native": "0.81.4",
+  "expo": "~54.0.10",
+  "typescript": "~5.9.2"
+}
+```
 
-#### 6. Paramètres
-- Configuration des notifications
-- Gestion du thème
-- Paramètres de l'application
-- À propos et version
+### Navigation & Routing
+```json
+{
+  "expo-router": "~6.0.8",
+  "@react-navigation/native": "^7.1.8"
+}
+```
 
-## 🛠️ Technologies
+### UI Components
+```json
+{
+  "react-native-paper": "^5.14.5",
+  "@expo/vector-icons": "^15.0.2",
+  "react-native-reanimated": "~4.1.1",
+  "expo-linear-gradient": "~15.0.7"
+}
+```
 
-### Stack Principal
-- **React Native** 0.81.4 - Framework mobile
-- **Expo** ~54.0.10 - Plateforme de développement
-- **TypeScript** ~5.9.2 - Typage statique
-- **Expo Router** - Navigation basée sur les fichiers
+### State Management
+```json
+{
+  "zustand": "^5.0.8",
+  "@react-native-async-storage/async-storage": "2.2.0"
+}
+```
 
-### UI/UX
-- **React Native Paper** 5.14.5 - Composants Material Design
-- **Expo Vector Icons** - Icônes vectorielles
-- **React Native Reanimated** - Animations fluides
-- **Expo Linear Gradient** - Dégradés
-
-### Gestion d'État
-- **Zustand** 5.0.8 - Store léger et performant
-- **AsyncStorage** - Persistance locale
-- **React Hooks** - État local des composants
-
-### Fonctionnalités Natives
-- **Expo Notifications** - Notifications push locales
-- **Expo File System** - Gestion des fichiers
-- **Expo Sharing** - Partage inter-applications
-- **DateTime Picker** - Sélection de date/heure
+### Native Features
+```json
+{
+  "expo-notifications": "~0.32.12",
+  "expo-file-system": "~19.0.16",
+  "expo-sharing": "~14.0.7",
+  "expo-print": "~15.0.7",
+  "@react-native-community/datetimepicker": "8.4.4",
+  "@react-native-community/slider": "^5.0.1"
+}
+```
 
 ## 📦 Installation
 
-### Prérequis
-- Node.js 18+ 
-- npm ou yarn
-- Expo CLI (`npm install -g @expo/cli`)
-- Simulateur iOS/Android ou appareil physique
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Expo CLI: `npm install -g @expo/cli`
+- iOS Simulator or Android Emulator
 
-### Installation Complète
+### Setup Process
 
 ```bash
-# 1. Cloner le repository
-git clone [URL_DU_REPO]
+# 1. Clone and navigate
+git clone [REPO_URL]
 cd DreamGuide
 
-# 2. Installer les dépendances
+# 2. Install dependencies
 npm install
 
-# 3. Vérifier la configuration Expo
+# 3. Verify Expo setup
 npx expo doctor
 
-# 4. Démarrer en mode développement
+# 4. Start development server
 npm start
-```
-
-### Dépendances Principales
-
-```json
-{
-  "dependencies": {
-    "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-native-community/datetimepicker": "8.4.4",
-    "@react-native-community/slider": "^5.0.1",
-    "expo-notifications": "~0.32.12",
-    "expo-file-system": "~19.0.16",
-    "expo-sharing": "~14.0.7",
-    "react-native-paper": "^5.14.5",
-    "zustand": "^5.0.8"
-  }
-}
 ```
 
 ## 🔧 Configuration
 
-### Configuration Expo (`app.json`)
+### Expo Configuration (`app.json`)
 
 ```json
 {
   "expo": {
-    "name": "DreamGuide",
-    "slug": "dreamguide",
+    "name": "Dreamguide",
+    "slug": "Dreamguide",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "dreamguide",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -226,438 +266,338 @@ npm start
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png"
-      },
       "permissions": [
         "NOTIFICATIONS",
-        "SCHEDULE_EXACT_ALARM",
-        "USE_EXACT_ALARM"
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
       ]
     },
-    "notification": {
-      "icon": "./assets/images/notification-icon.png",
-      "color": "#6366F1"
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#6366F1"
+        }
+      ]
+    ]
+  }
+}
+```
+
+### TypeScript Configuration
+
+```json
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"]
     }
   }
 }
 ```
 
-### Variables d'Environnement
+## 🎨 Theme System
 
-Créer un fichier `.env` :
-
-```env
-# Configuration de l'app
-APP_NAME=DreamGuide
-APP_VERSION=1.0.0
-
-# Notifications
-NOTIFICATION_CHANNEL_ID=dream-reminders
-DEFAULT_MORNING_TIME=08:00
-DEFAULT_EVENING_TIME=21:00
-
-# Thème
-DEFAULT_THEME=auto
-PRIMARY_COLOR=#6366F1
-```
-
-## 📊 Structure des Données
-
-### Interface Dream
+### Theme Store (Zustand)
 
 ```typescript
-interface Dream {
-  // Identifiants
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  
-  // Contenu principal
-  dreamText: string;                    // Description du rêve
-  todayDate: string;                   // Date du rêve
-  
-  // Classification
-  dreamType?: DreamType;               // Type de rêve
-  overallTone?: ToneType;              // Tonalité générale
-  isLucidDream: boolean;               // Rêve lucide
-  
-  // Contexte
-  location?: string;                   // Lieu du rêve
-  characters?: string;                 // Personnages présents
-  
-  // Émotions
-  emotionBefore?: string[];            // Émotions avant le rêve
-  emotionAfter?: string[];             // Émotions après le rêve
-  emotionalIntensity?: number;         // Intensité 1-10
-  
-  // Qualité
-  clarity?: number;                    // Clarté 1-10
-  sleepQuality?: number;               // Qualité sommeil 1-10
-  
-  // Métadonnées
-  keywords?: string[];                 // Mots-clés
-  hashtags?: HashtagsLegacy;          // Format legacy
-  hashtagsArray?: Hashtag[];          // Nouveau format
-  personalMeaning?: string;            // Signification personnelle
+// store/themeStore.ts
+export type ThemeType = 'light' | 'dark';
+
+interface ThemeState {
+  theme: ThemeType;
+  setTheme: (theme: ThemeType) => Promise<void>;
+  toggleTheme: () => Promise<void>;
 }
+
+export const useThemeStore = create<ThemeState>((set, get) => ({
+  theme: 'light',
+  setTheme: async (newTheme: ThemeType) => {
+    await AsyncStorage.setItem('userTheme', newTheme);
+    set({ theme: newTheme });
+  },
+  toggleTheme: async () => {
+    const currentTheme = get().theme;
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    await AsyncStorage.setItem('userTheme', newTheme);
+    set({ theme: newTheme });
+  }
+}));
 ```
 
-### Types Énumérés
+### Theme Colors
 
 ```typescript
-type DreamType = 'ordinary' | 'lucid' | 'nightmare' | 'premonitory' | 'fantasy';
-type ToneType = 'positive' | 'neutral' | 'negative';
-
-interface Hashtag {
-  id: string;
-  label: string;
-}
-```
-
-### Stockage Local
-
-```typescript
-// Clés AsyncStorage
-const STORAGE_KEYS = {
-  DREAMS: 'dreamFormDataArray',
-  THEME: 'app-theme',
-  NOTIFICATIONS: 'notification-settings',
-  USER_PREFERENCES: 'user-preferences'
-};
-```
-
-## 🎨 Thème et UI
-
-### Système de Thème
-
-```typescript
-interface AppTheme {
-  // Couleurs principales
-  primary: string;
-  accent: string;
+// hooks/useAppTheme.ts
+interface ThemeColors {
   background: string;
-  surface: string;
-  card: string;
-  
-  // Texte
   text: string;
   textSecondary: string;
-  
-  // États
+  card: string;
   border: string;
-  error: string;
-  success: string;
-  warning: string;
+  accent: string;
+  surface: string;
 }
-```
 
-### Thèmes Prédéfinis
-
-```typescript
-const LIGHT_THEME: AppTheme = {
-  primary: '#6366F1',
-  accent: '#4ECDC4',
-  background: '#FFFFFF',
-  surface: '#F8F9FA',
-  card: '#FFFFFF',
-  text: '#1F2937',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  error: '#EF4444',
-  success: '#10B981',
-  warning: '#F59E0B'
-};
-
-const DARK_THEME: AppTheme = {
-  primary: '#818CF8',
-  accent: '#34D399',
-  background: '#111827',
-  surface: '#1F2937',
-  card: '#374151',
-  text: '#F9FAFB',
-  textSecondary: '#D1D5DB',
-  border: '#4B5563',
-  error: '#F87171',
-  success: '#34D399',
-  warning: '#FBBF24'
+const THEME_COLORS: Record<'light' | 'dark', ThemeColors> = {
+  light: {
+    background: '#ffffff',
+    text: '#000000',
+    textSecondary: '#666666',
+    card: '#ffffff',
+    border: '#e0e0e0',
+    accent: '#000000',
+    surface: '#f5f5f5'
+  },
+  dark: {
+    background: '#000000',
+    text: '#ffffff',
+    textSecondary: '#a0a0a0',
+    card: '#1a1a1a',
+    border: '#333333',
+    accent: '#ffffff',
+    surface: '#1a1a1a'
+  }
 };
 ```
 
-### Composants Thématisés
+## 📱 Components
+
+### DreamForm Component
+
+Comprehensive form with 15+ fields:
 
 ```typescript
-// Hook pour accéder au thème
-const theme = useAppTheme();
+// Key features:
+- Date/time picker with DateTimePicker
+- Dream type selector with modal
+- Multi-line text input for description
+- Location and characters fields
+- Emotion chips (before/after sleep)
+- Quality sliders with dynamic colors
+- Hashtag and keyword management
+- Form validation and error handling
+- AsyncStorage persistence
+```
 
-// Composant avec thème
-<View style={[styles.container, { backgroundColor: theme.background }]}>
-  <Text style={[styles.text, { color: theme.text }]}>
-    Contenu thématisé
-  </Text>
-</View>
+### Export System
+
+Multi-format export capabilities:
+
+```typescript
+// Supported formats:
+- PDF: Formatted document with Print API
+- TXT: Plain text with structured layout
+- CSV: Spreadsheet-compatible format
+- JSON: Raw data for backup/migration
+
+// Platform handling:
+- Web: Direct download via blob URLs
+- Mobile: Share API integration
+- Error handling and validation
+```
+
+### Statistics Dashboard
+
+Data visualization and analytics:
+
+```typescript
+// Metrics calculated:
+- Total dreams and lucid percentage
+- Average intensity, clarity, sleep quality
+- Dream type distribution
+- Emotion frequency analysis
+- Keyword occurrence tracking
+- Temporal trends
+```
+
+## 🔄 State Management
+
+### Theme State (Zustand)
+
+```typescript
+// Persistent theme preferences
+// Automatic system theme detection
+// Smooth theme transitions
+// AsyncStorage integration
+```
+
+### Local Component State
+
+```typescript
+// Form state management
+// Search filters and results
+// Modal visibility states
+// Loading and error states
+```
+
+## 💾 Data Persistence
+
+### AsyncStorage Service
+
+```typescript
+// services/dreamService.ts
+export const getAllDreams = async (): Promise<Dream[]> => {
+  const data = await AsyncStorage.getItem('dreamFormDataArray');
+  return data ? JSON.parse(data) : [];
+};
+
+export const saveDream = async (dream: Dream): Promise<void> => {
+  const existingDreams = await getAllDreams();
+  existingDreams.push(dream);
+  await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(existingDreams));
+};
+
+export const updateDream = async (index: number, updatedDream: Dream): Promise<void> => {
+  const dreams = await getAllDreams();
+  dreams[index] = updatedDream;
+  await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(dreams));
+};
+
+export const deleteDream = async (index: number): Promise<void> => {
+  const dreams = await getAllDreams();
+  dreams.splice(index, 1);
+  await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(dreams));
+};
+```
+
+### Storage Keys
+
+```typescript
+export const STORAGE_KEYS = {
+  DREAMS: 'dreamFormDataArray',
+  THEME: 'userTheme'
+} as const;
+```
+
+## 📤 Export System
+
+### PDF Export
+
+```typescript
+// Uses expo-print for PDF generation
+// HTML template with CSS styling
+// Platform-specific sharing
+// Error handling and validation
+```
+
+### Text Export
+
+```typescript
+// Structured plain text format
+// Cross-platform compatibility
+// Share API integration
+// Blob handling for web
+```
+
+### CSV Export
+
+```typescript
+// Spreadsheet-compatible format
+// Proper escaping and encoding
+// Column headers and data mapping
+// Excel/Google Sheets compatible
+```
+
+### JSON Export
+
+```typescript
+// Raw data backup format
+// Complete data preservation
+// Migration and import support
+// Structured JSON with metadata
 ```
 
 ## 🔔 Notifications
 
-### Configuration des Notifications
+### Configuration
 
 ```typescript
-interface NotificationSettings {
-  enabled: boolean;
-  morningEnabled: boolean;
-  eveningEnabled: boolean;
-  morningTime: string;      // Format "HH:MM"
-  eveningTime: string;      // Format "HH:MM"
-  customMessage?: string;
-}
+// expo-notifications integration
+// Permission handling
+// Scheduled notifications
+// Platform-specific setup
 ```
 
-### Implémentation
+### Implementation
 
 ```typescript
-// Demander les permissions
-const { status } = await Notifications.requestPermissionsAsync();
-
-// Programmer une notification
-await Notifications.scheduleNotificationAsync({
-  content: {
-    title: "DreamGuide 🌙",
-    body: "N'oubliez pas de noter votre rêve !",
-    sound: true,
-  },
-  trigger: {
-    hour: 8,
-    minute: 0,
-    repeats: true,
-  },
-});
+// Morning/evening reminders
+// Custom notification messages
+// Repeat scheduling
+// Background notification handling
 ```
 
-### Gestion des Permissions
+## 🧪 Testing
 
-- **iOS** : Demande automatique au premier lancement
-- **Android** : Permissions dans `app.json` + demande runtime
-- **Web** : Notifications navigateur (limitées)
-
-## 📤 Export de Données
-
-### Formats Supportés
-
-#### 1. Export TXT
-```
-=== MES RÊVES - DREAMGUIDE ===
-Exporté le: [DATE]
-Total: [NOMBRE] rêves
-
---- RÊVE #1 ---
-Date: [DATE]
-Type: [TYPE] [ICÔNE]
-Tonalité: [TONALITÉ]
-
-[CONTENU DU RÊVE]
-
-Lieu: [LIEU]
-Personnages: [PERSONNAGES]
-Intensité: [X]/10
-Clarté: [X]/10
-Hashtags: #[TAG1] #[TAG2]
-```
-
-#### 2. Export CSV
-```csv
-Date,Type,Tonalité,Contenu,Lieu,Personnages,Intensité,Clarté,Hashtags
-2024-01-01,ordinary,positive,"Contenu du rêve","Maison","Famille",7,8,"#famille #maison"
-```
-
-#### 3. Export JSON
-```json
-{
-  "exportDate": "2024-01-01T10:00:00.000Z",
-  "version": "1.0.0",
-  "totalDreams": 1,
-  "dreams": [
-    {
-      "dreamText": "Contenu du rêve",
-      "todayDate": "2024-01-01T00:00:00.000Z",
-      "dreamType": "ordinary",
-      "overallTone": "positive",
-      // ... autres champs
-    }
-  ]
-}
-```
-
-### Utilisation
-
-```typescript
-// Export TXT
-const txtContent = await exportToTXT(dreams);
-await shareContent(txtContent, 'mes-reves.txt');
-
-// Export CSV
-const csvContent = await exportToCSV(dreams);
-await shareContent(csvContent, 'mes-reves.csv');
-
-// Export JSON
-const jsonContent = await exportToJSON(dreams);
-await shareContent(jsonContent, 'mes-reves.json');
-```
-
-## 🧪 Tests
-
-### Structure des Tests
+### Test Structure
 
 ```
 __tests__/
-├── components/
-│   ├── DreamForm.test.tsx
-│   ├── DreamList.test.tsx
-│   └── StatisticsScreen.test.tsx
-├── utils/
-│   ├── dreamUtils.test.ts
-│   └── exportUtils.test.ts
-├── services/
-│   └── dreamService.test.ts
-└── hooks/
-    └── useAppTheme.test.ts
+├── components/           # Component tests
+├── services/            # Service layer tests
+├── utils/               # Utility function tests
+└── hooks/               # Custom hook tests
 ```
 
-### Commandes de Test
+### Testing Commands
 
 ```bash
-# Lancer tous les tests
-npm test
-
-# Tests en mode watch
-npm run test:watch
-
-# Coverage
-npm run test:coverage
-
-# Tests E2E (si configurés)
-npm run test:e2e
+npm test                 # Run all tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
 ```
 
-### Exemple de Test
+## 🚀 Deployment
 
-```typescript
-import { render, fireEvent } from '@testing-library/react-native';
-import DreamForm from '../components/DreamForm';
-
-describe('DreamForm', () => {
-  it('should validate required fields', () => {
-    const { getByText, getByPlaceholderText } = render(<DreamForm />);
-    
-    const submitButton = getByText('Enregistrer le rêve');
-    fireEvent.press(submitButton);
-    
-    expect(getByText('Erreur')).toBeTruthy();
-  });
-});
-```
-
-## 🚀 Déploiement
-
-### Build de Production
+### Build Commands
 
 ```bash
-# Build pour toutes les plateformes
-npx expo build
+# Development build
+npx expo start
 
-# Build spécifique
+# Production builds
 npx expo build:android
 npx expo build:ios
 npx expo build:web
 ```
 
-### Configuration EAS Build
+### Platform Deployment
 
-```json
-{
-  "build": {
-    "production": {
-      "node": "18.x.x",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    },
-    "preview": {
-      "distribution": "internal"
-    }
-  }
-}
-```
-
-### Déploiement
-
-#### App Stores
 ```bash
-# Soumettre à l'App Store
+# App Store submission
 npx expo submit --platform ios
 
-# Soumettre au Play Store
+# Play Store submission
 npx expo submit --platform android
-```
 
-#### Web
-```bash
-# Build web
+# Web deployment
 npx expo export:web
-
-# Déployer (exemple Netlify)
-npm run build:web
-netlify deploy --prod --dir web-build
 ```
 
-## 🤝 Contribution
+### Environment Configuration
 
-### Workflow de Développement
-
-1. **Fork** le repository
-2. **Créer** une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. **Commiter** les changements (`git commit -m 'Ajout nouvelle fonctionnalité'`)
-4. **Pousser** la branche (`git push origin feature/nouvelle-fonctionnalite`)
-5. **Créer** une Pull Request
-
-### Standards de Code
-
-- **ESLint** : Configuration stricte
-- **Prettier** : Formatage automatique
-- **TypeScript** : Typage strict
-- **Conventional Commits** : Messages de commit standardisés
-
-### Structure des Commits
-
+```bash
+# Production environment variables
+# Build optimization settings
+# Platform-specific configurations
+# Asset optimization
 ```
-type(scope): description
-
-feat(dreams): ajout du filtre par date
-fix(export): correction du format CSV
-docs(readme): mise à jour de la documentation
-style(ui): amélioration du thème sombre
-refactor(utils): optimisation des fonctions d'export
-test(components): ajout des tests unitaires
-```
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 🙏 Remerciements
-
-- **Expo Team** pour l'excellent framework
-- **React Native Paper** pour les composants UI
-- **Communauté React Native** pour le support
 
 ---
 
-## 📞 Support
+## 🤝 Contributing
 
-- **Issues** : [GitHub Issues](https://github.com/[USERNAME]/dreamguide/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/[USERNAME]/dreamguide/discussions)
-- **Email** : support@dreamguide.app
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/new-feature`)
+3. Commit changes (`git commit -m 'Add new feature'`)
+4. Push to branch (`git push origin feature/new-feature`)
+5. Create Pull Request
 
 ---
 
-**DreamGuide** - Transformez vos rêves en souvenirs durables 🌙✨
+**DreamGuide** - Par Simon GODARD et Arthur Magès 🌙✨

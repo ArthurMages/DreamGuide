@@ -1,551 +1,311 @@
-import { useAppTheme } from '../hooks/useAppTheme';
+import React, { useState } from 'react';
+import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
+import { Button, Divider, Text } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import React, { useState } from 'react';
-import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
-import { Button, Divider, Text } from 'react-native-paper';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { ThemedCard } from './ThemedCard';
 
 interface Dream {
   dreamText: string;
-  isLucidDream: boolean;
   todayDate: string;
-  hashtags?: any;
   dreamType?: string;
-  emotionBefore?: string[];
-  emotionAfter?: string[];
-  characters?: string;
   location?: string;
+  characters?: string;
   emotionalIntensity?: number;
   clarity?: number;
-  keywords?: string[];
   sleepQuality?: number;
   personalMeaning?: string;
-  overallTone?: string;
-  hashtagsArray?: { id: string; label: string }[];
+  keywords?: string[];
+  emotionBefore?: string[];
+  emotionAfter?: string[];
 }
 
-const getDocumentDirectory = () => {
-  try {
-    return ((FileSystem as any).documentDirectory as string) || '';
-  } catch (error) {
-    console.error('Erreur accès répertoire:', error);
-    return '';
-  }
-};
-
-// Fonction pour échapper les caractères HTML
-const escapeHtml = (text: string): string => {
-  if (typeof text !== 'string') return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-};
-
-// Fonction pour nettoyer et valider les données
-const sanitizeText = (text: any): string => {
-  if (typeof text !== 'string') return '';
-  return text.slice(0, 10000); // Limite de sécurité
-};
-
-const qualityLabel = (v: number) => {
-  if (v <= 2) return 'Cauchemar';
-  if (v <= 4) return 'Très mauvaise';
-  if (v <= 6) return 'Moyenne';
-  if (v <= 8) return 'Bonne';
-  return 'Beaux rêves';
-};
-
 export default function ExportDreams() {
-  const [isExporting, setIsExporting] = useState(false);
   const theme = useAppTheme();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const getDreams = async (): Promise<Dream[]> => {
+    try {
+      const data = await AsyncStorage.getItem('dreamFormDataArray');
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Failed to load dreams for export:', error);
+      return [];
+    }
+  };
+
+  const sanitizeText = (text: string): string => {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/\//g, '&#x2F;');
+  };
 
   const formatDreamToHTML = (dream: Dream, index: number): string => {
-    const date = new Date(dream.todayDate).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    const typeLabels: { [key: string]: string } = {
-      ordinary: '💭 Ordinaire',
-      lucid: '✨ Lucide',
-      nightmare: '😱 Cauchemar',
-      premonitory: '🔮 Prémonitoire',
-      fantasy: '🌈 Fantastique',
-    };
-
-    const toneLabels: { [key: string]: string } = {
-      positive: '😊 Positive',
-      neutral: '😐 Neutre',
-      negative: '😔 Négative',
-    };
-
-    // Récupérer les hashtags
-    const tagsArray = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
-      ? dream.hashtagsArray.map((h: any) => h?.label).filter(Boolean)
-      : [
-        dream.hashtags?.hashtag1?.label,
-        dream.hashtags?.hashtag2?.label,
-        dream.hashtags?.hashtag3?.label,
-      ].filter(Boolean);
-
-    let html = `
-      <div style="margin-bottom: 40px; page-break-inside: avoid;">
-        <div style="border-bottom: 3px solid #2196F3; padding-bottom: 10px; margin-bottom: 20px;">
-          <h2 style="color: #2196F3; margin: 0;">Rêve #${index + 1}</h2>
-          <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">${date}</p>
+    const date = new Date(dream.todayDate).toLocaleDateString('fr-FR');
+    
+    return `
+      <div style="margin-bottom: 30px; page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 20px;">
+        <h2 style="color: #2196F3; margin-bottom: 5px;">Rêve #${index + 1}</h2>
+        <p style="color: #666; margin-bottom: 15px;">${date}</p>
+        
+        <div style="margin-bottom: 15px;">
+          <h3 style="color: #333; margin-bottom: 8px;">📝 Description</h3>
+          <p style="line-height: 1.6;">${sanitizeText(dream.dreamText)}</p>
         </div>
-
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 0; font-weight: bold;">Type de rêve</p>
-          <p style="margin: 5px 0 0 0; font-size: 18px;">${typeLabels[dream.dreamType || 'ordinary']}</p>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333; font-size: 16px; margin-bottom: 10px;">📝 Description</h3>
-          <p style="line-height: 1.6; color: #333; white-space: pre-wrap;">${escapeHtml(sanitizeText(dream.dreamText))}</p>
-        </div>
+        
+        ${dream.location ? `<p><strong>📍 Lieu:</strong> ${sanitizeText(dream.location)}</p>` : ''}
+        ${dream.characters ? `<p><strong>👥 Personnages:</strong> ${sanitizeText(dream.characters)}</p>` : ''}
+        ${dream.emotionalIntensity ? `<p><strong>💫 Intensité:</strong> ${dream.emotionalIntensity}/10</p>` : ''}
+        ${dream.clarity ? `<p><strong>🔍 Clarté:</strong> ${dream.clarity}/10</p>` : ''}
+        ${dream.sleepQuality ? `<p><strong>😴 Sommeil:</strong> ${dream.sleepQuality}/10</p>` : ''}
+        
+        ${dream.emotionBefore?.length ? `<p><strong>😴 Émotions avant:</strong> ${dream.emotionBefore.map(e => sanitizeText(e)).join(', ')}</p>` : ''}
+        ${dream.emotionAfter?.length ? `<p><strong>😊 Émotions après:</strong> ${dream.emotionAfter.map(e => sanitizeText(e)).join(', ')}</p>` : ''}
+        ${dream.keywords?.length ? `<p><strong>🏷️ Mots-clés:</strong> ${dream.keywords.map(k => sanitizeText(k)).join(', ')}</p>` : ''}
+        
+        ${dream.personalMeaning ? `
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <h4 style="color: #495057; margin-bottom: 8px;">💭 Signification personnelle</h4>
+            <p style="margin: 0; line-height: 1.6;">${sanitizeText(dream.personalMeaning)}</p>
+          </div>
+        ` : ''}
+      </div>
     `;
-
-    if (dream.location) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>📍 Lieu:</strong> ${escapeHtml(sanitizeText(dream.location))}</p>
-        </div>
-      `;
-    }
-
-    if (dream.characters) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>👥 Personnages:</strong> ${escapeHtml(sanitizeText(dream.characters))}</p>
-        </div>
-      `;
-    }
-
-    if (dream.emotionBefore && dream.emotionBefore.length > 0) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>😴 Émotions avant:</strong> ${dream.emotionBefore.map(e => escapeHtml(sanitizeText(e))).join(', ')}</p>
-        </div>
-      `;
-    }
-
-    if (dream.emotionAfter && dream.emotionAfter.length > 0) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>😊 Émotions après:</strong> ${dream.emotionAfter.map(e => escapeHtml(sanitizeText(e))).join(', ')}</p>
-        </div>
-      `;
-    }
-
-    if (dream.emotionalIntensity) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>💫 Intensité émotionnelle:</strong> ${dream.emotionalIntensity}/10</p>
-        </div>
-      `;
-    }
-
-    if (dream.clarity) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>🔍 Clarté:</strong> ${dream.clarity}/10</p>
-        </div>
-      `;
-    }
-
-    if (dream.overallTone) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>🎭 Tonalité:</strong> ${toneLabels[dream.overallTone]}</p>
-        </div>
-      `;
-    }
-
-    if (dream.sleepQuality) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>😴 Qualité du sommeil:</strong> ${qualityLabel(dream.sleepQuality)} (${dream.sleepQuality}/10)</p>
-        </div>
-      `;
-    }
-
-    if (dream.keywords && dream.keywords.length > 0) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>🏷️ Mots-clés:</strong> ${dream.keywords.map(k => escapeHtml(sanitizeText(k))).join(', ')}</p>
-        </div>
-      `;
-    }
-
-    if (tagsArray.length > 0) {
-      html += `
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>#️⃣ Hashtags:</strong> ${tagsArray.map((t: string) => `#${escapeHtml(sanitizeText(t))}`).join(' ')}</p>
-        </div>
-      `;
-    }
-
-    if (dream.personalMeaning) {
-      html += `
-        <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px;">
-          <h4 style="color: #e65100; margin: 0 0 10px 0;">💭 Signification personnelle</h4>
-          <p style="margin: 0; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(sanitizeText(dream.personalMeaning))}</p>
-        </div>
-      `;
-    }
-
-    html += `</div>`;
-    return html;
   };
 
   const formatDreamToText = (dream: Dream, index: number): string => {
-    const date = new Date(dream.todayDate).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    let text = `\n${'='.repeat(50)}\n`;
+    const date = new Date(dream.todayDate).toLocaleDateString('fr-FR');
+    
+    let text = `\n${'='.repeat(60)}\n`;
     text += `RÊVE #${index + 1} - ${date}\n`;
-    text += `${'='.repeat(50)}\n\n`;
-
-    const typeLabels: { [key: string]: string } = {
-      ordinary: 'Ordinaire',
-      lucid: 'Lucide',
-      nightmare: 'Cauchemar',
-      premonitory: 'Prémonitoire',
-      fantasy: 'Fantastique',
-    };
-    text += `Type: ${typeLabels[dream.dreamType || 'ordinary']}\n\n`;
-
-    text += `DESCRIPTION:\n${sanitizeText(dream.dreamText)}\n\n`;
-
-    if (dream.location) {
-      text += `📍 Lieu: ${sanitizeText(dream.location)}\n`;
-    }
-
-    if (dream.characters) {
-      text += `👥 Personnages: ${sanitizeText(dream.characters)}\n`;
-    }
-
-    if (dream.emotionBefore && dream.emotionBefore.length > 0) {
-      text += `😴 Émotions avant: ${dream.emotionBefore.map(e => sanitizeText(e)).join(', ')}\n`;
-    }
-    if (dream.emotionAfter && dream.emotionAfter.length > 0) {
-      text += `😊 Émotions après: ${dream.emotionAfter.map(e => sanitizeText(e)).join(', ')}\n`;
-    }
-
-    if (dream.emotionalIntensity) {
-      text += `💫 Intensité émotionnelle: ${dream.emotionalIntensity}/10\n`;
-    }
-    if (dream.clarity) {
-      text += `🔍 Clarté: ${dream.clarity}/10\n`;
-    }
-
-    if (dream.overallTone) {
-      const tones: { [key: string]: string } = {
-        positive: 'Positive',
-        neutral: 'Neutre',
-        negative: 'Négative',
-      };
-      text += `🎭 Tonalité: ${tones[dream.overallTone]}\n`;
-    }
-
-    if (dream.sleepQuality) {
-      text += `😴 Qualité du sommeil: ${qualityLabel(dream.sleepQuality)} (${dream.sleepQuality}/10)\n`;
-    }
-
-    if (dream.keywords && dream.keywords.length > 0) {
-      text += `🏷️ Mots-clés: ${dream.keywords.map(k => sanitizeText(k)).join(', ')}\n`;
-    }
-
-    const tagsArray = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
-      ? dream.hashtagsArray.map((h: any) => h?.label).filter(Boolean)
-      : [
-        dream.hashtags?.hashtag1?.label,
-        dream.hashtags?.hashtag2?.label,
-        dream.hashtags?.hashtag3?.label,
-      ].filter(Boolean);
-
-    if (tagsArray.length > 0) {
-      text += `#️⃣ Hashtags: ${tagsArray.map((t: string) => `#${sanitizeText(t)}`).join(' ')}\n`;
-    }
-
+    text += `${'='.repeat(60)}\n\n`;
+    text += `DESCRIPTION:\n${dream.dreamText}\n\n`;
+    
+    if (dream.location) text += `📍 Lieu: ${dream.location}\n`;
+    if (dream.characters) text += `👥 Personnages: ${dream.characters}\n`;
+    if (dream.emotionalIntensity) text += `💫 Intensité émotionnelle: ${dream.emotionalIntensity}/10\n`;
+    if (dream.clarity) text += `🔍 Clarté: ${dream.clarity}/10\n`;
+    if (dream.sleepQuality) text += `😴 Qualité du sommeil: ${dream.sleepQuality}/10\n`;
+    
+    if (dream.emotionBefore?.length) text += `😴 Émotions avant: ${dream.emotionBefore.join(', ')}\n`;
+    if (dream.emotionAfter?.length) text += `😊 Émotions après: ${dream.emotionAfter.join(', ')}\n`;
+    if (dream.keywords?.length) text += `🏷️ Mots-clés: ${dream.keywords.join(', ')}\n`;
+    
     if (dream.personalMeaning) {
-      text += `\n💭 SIGNIFICATION PERSONNELLE:\n${sanitizeText(dream.personalMeaning)}\n`;
+      text += `\n💭 SIGNIFICATION PERSONNELLE:\n${dream.personalMeaning}\n`;
     }
-
+    
     return text;
   };
 
-  const formatDreamToJSON = (dreams: Dream[]): string => {
-    return JSON.stringify(dreams, null, 2);
-  };
-
-  const formatDreamToCSV = (dreams: Dream[]): string => {
-    let csv = 'Date,Type,Description,Lieu,Personnages,Intensité,Clarté,Tonalité,Qualité Sommeil,Mots-clés,Hashtags\n';
-
-    dreams.forEach(dream => {
-      const date = new Date(dream.todayDate).toLocaleDateString('fr-FR');
-      const type = dream.dreamType || 'ordinary';
-      const description = `"${sanitizeText(dream.dreamText).replace(/"/g, '""')}"`;
-      const location = dream.location || '';
-      const characters = dream.characters || '';
-      const intensity = dream.emotionalIntensity || '';
-      const clarity = dream.clarity || '';
-      const tone = dream.overallTone || '';
-      const sleepQuality = dream.sleepQuality || '';
-      const keywords = dream.keywords?.join(';') || '';
-      const hashtags = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
-        ? dream.hashtagsArray.map((h: any) => h?.label).filter(Boolean).join(';')
-        : [
-          dream.hashtags?.hashtag1?.label,
-          dream.hashtags?.hashtag2?.label,
-          dream.hashtags?.hashtag3?.label,
-        ].filter(Boolean).join(';');
-
-      csv += `${date},${type},${description},${location},${characters},${intensity},${clarity},${tone},${sleepQuality},${keywords},${hashtags}\n`;
-    });
-
-    return csv;
-  };
-
   const exportAsPDF = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
-      const dreams: Dream[] = data ? JSON.parse(data) : [];
-
-      if (dreams.length === 0) {
+      const dreams = await getDreams();
+      if (!dreams || dreams.length === 0) {
         Alert.alert('Erreur', 'Aucun rêve à exporter');
+        setIsExporting(false);
         return;
       }
 
-      // Créer le HTML complet pour le PDF
-      let htmlContent = `
+      const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              padding: 30px;
-              color: #333;
-              line-height: 1.6;
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+              padding: 30px; 
+              color: #333; 
+              line-height: 1.6; 
             }
-            .header {
-              text-align: center;
-              margin-bottom: 40px;
-              padding-bottom: 20px;
-              border-bottom: 4px solid #2196F3;
+            .header { 
+              text-align: center; 
+              margin-bottom: 40px; 
+              border-bottom: 3px solid #2196F3; 
+              padding-bottom: 20px; 
             }
-            .header h1 {
-              color: #2196F3;
-              font-size: 32px;
-              margin: 0 0 10px 0;
-            }
-            .header p {
-              color: #666;
-              font-size: 16px;
-              margin: 5px 0;
-            }
-            @media print {
-              .page-break {
-                page-break-before: always;
-              }
+            .header h1 { 
+              color: #2196F3; 
+              margin: 0 0 10px 0; 
+              font-size: 28px; 
             }
           </style>
         </head>
         <body>
           <div class="header">
             <h1>🌙 Mon Journal de Rêves</h1>
-            <p>Exporté le ${new Date().toLocaleDateString('fr-FR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}</p>
-            <p>Nombre total de rêves: ${dreams.length}</p>
+            <p>Exporté le ${new Date().toLocaleDateString('fr-FR')}</p>
+            <p>Total: ${dreams.length} rêve${dreams.length > 1 ? 's' : ''}</p>
           </div>
-      `;
-
-      dreams.forEach((dream, index) => {
-        if (index > 0) {
-          htmlContent += '<div class="page-break"></div>';
-        }
-        htmlContent += formatDreamToHTML(dream, index);
-      });
-
-      htmlContent += `
+          ${dreams.map((dream, index) => formatDreamToHTML(dream, index)).join('')}
         </body>
         </html>
       `;
 
-      // Générer le PDF
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-        base64: false
-      });
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
 
       if (Platform.OS === 'web') {
-        // Pour le web, télécharger directement
         const link = document.createElement('a');
         link.href = uri;
-        link.download = `mes-reves-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.download = `journal-reves-${new Date().toISOString().split('T')[0]}.pdf`;
         link.click();
-      } else {
-        // Pour mobile, partager le fichier
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Partager mon journal de rêves'
-          });
-        } else {
-          Alert.alert('Succès', `PDF créé: ${uri}`);
-        }
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Partager mon journal de rêves'
+        });
       }
 
-      Alert.alert('Succès', 'Export PDF réussi ! 📄');
+      Alert.alert('Succès', 'Export PDF réussi !');
     } catch (error) {
-      console.error('Erreur export PDF');
-      Alert.alert('Erreur', "Impossible d'exporter en PDF. Vérifiez l'espace de stockage disponible.");
+      console.error('PDF export failed:', error);
+      Alert.alert('Erreur', "Impossible d'exporter en PDF");
     } finally {
       setIsExporting(false);
     }
   };
 
   const exportAsText = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
-      const dreams: Dream[] = data ? JSON.parse(data) : [];
-
+      const dreams = await getDreams();
       if (dreams.length === 0) {
         Alert.alert('Erreur', 'Aucun rêve à exporter');
         return;
       }
 
-      let fullText = `MON JOURNAL DE RÊVES\n`;
-      fullText += `Exporté le ${new Date().toLocaleDateString('fr-FR')}\n`;
-      fullText += `Nombre total de rêves: ${dreams.length}\n`;
-
-      dreams.forEach((dream, index) => {
-        fullText += formatDreamToText(dream, index);
-      });
+      let content = `MON JOURNAL DE RÊVES\n`;
+      content += `Exporté le ${new Date().toLocaleDateString('fr-FR')}\n`;
+      content += `Total: ${dreams.length} rêve${dreams.length > 1 ? 's' : ''}\n`;
+      content += dreams.map((dream, index) => formatDreamToText(dream, index)).join('');
 
       if (Platform.OS === 'web') {
-        const blob = new Blob([fullText], { type: 'text/plain' });
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `mes-reves-${new Date().toISOString().split('T')[0]}.txt`;
+        link.download = `journal-reves-${new Date().toISOString().split('T')[0]}.txt`;
         link.click();
         URL.revokeObjectURL(url);
       } else {
-        await Share.share({
-          message: fullText,
-          title: 'Mes Rêves',
-        });
+        await Share.share({ message: content, title: 'Mon Journal de Rêves' });
       }
 
-      Alert.alert('Succès', 'Export réussi !');
+      Alert.alert('Succès', 'Export texte réussi !');
     } catch (error) {
-      console.error('Erreur export:', error);
-      Alert.alert('Erreur', "Impossible d'exporter les rêves");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const exportAsJSON = async () => {
-    try {
-      setIsExporting(true);
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
-      const dreams: Dream[] = data ? JSON.parse(data) : [];
-
-      if (dreams.length === 0) {
-        Alert.alert('Erreur', 'Aucun rêve à exporter');
-        return;
-      }
-
-      const jsonContent = formatDreamToJSON(dreams);
-
-      if (Platform.OS === 'web') {
-        const blob = new Blob([jsonContent], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `mes-reves-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-      } else {
-        const fileUri = `${getDocumentDirectory()}mes-reves-${new Date().toISOString().split('T')[0]}.json`;
-        await FileSystem.writeAsStringAsync(fileUri, jsonContent);
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri);
-        } else {
-          Alert.alert('Erreur', 'Le partage de fichiers n\'est pas disponible');
-        }
-      }
-
-      Alert.alert('Succès', 'Export JSON réussi !');
-    } catch (error) {
-      console.error('Erreur export JSON:', error);
-      Alert.alert('Erreur', "Impossible d'exporter en JSON");
+      console.error('Text export failed:', error);
+      Alert.alert('Erreur', "Impossible d'exporter en texte");
     } finally {
       setIsExporting(false);
     }
   };
 
   const exportAsCSV = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
-      const dreams: Dream[] = data ? JSON.parse(data) : [];
-
+      const dreams = await getDreams();
       if (dreams.length === 0) {
         Alert.alert('Erreur', 'Aucun rêve à exporter');
         return;
       }
 
-      const csvContent = formatDreamToCSV(dreams);
+      let csvContent = 'Date,Type,Description,Lieu,Personnages,Intensité,Clarté,Sommeil,Émotions Avant,Émotions Après,Mots-clés,Signification\n';
+      
+      dreams.forEach(dream => {
+        const sanitizeCSV = (text: string) => text ? text.replace(/"/g, '""').replace(/[\r\n]/g, ' ') : '';
+        
+        const row = [
+          new Date(dream.todayDate).toLocaleDateString('fr-FR'),
+          sanitizeCSV(dream.dreamType || ''),
+          `"${sanitizeCSV(dream.dreamText || '')}"`,
+          sanitizeCSV(dream.location || ''),
+          sanitizeCSV(dream.characters || ''),
+          dream.emotionalIntensity || '',
+          dream.clarity || '',
+          dream.sleepQuality || '',
+          dream.emotionBefore?.map(e => sanitizeCSV(e)).join(';') || '',
+          dream.emotionAfter?.map(e => sanitizeCSV(e || '')).join(';') || '',
+          dream.keywords?.map(k => sanitizeCSV(k || '')).join(';') || '',
+          dream.personalMeaning ? `"${sanitizeCSV(dream.personalMeaning)}"` : ''
+        ];
+        csvContent += row.join(',') + '\n';
+      });
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `mes-reves-${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `journal-reves-${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         URL.revokeObjectURL(url);
       } else {
-        const fileUri = `${getDocumentDirectory()}mes-reves-${new Date().toISOString().split('T')[0]}.csv`;
-        await FileSystem.writeAsStringAsync(fileUri, csvContent);
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri);
-        } else {
-          Alert.alert('Erreur', 'Le partage de fichiers n\'est pas disponible');
+        if (FileSystem.documentDirectory) {
+          const fileUri = `${FileSystem.documentDirectory}journal-reves-${new Date().toISOString().split('T')[0]}.csv`;
+          await FileSystem.writeAsStringAsync(fileUri, csvContent);
+          
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri);
+          }
         }
       }
 
       Alert.alert('Succès', 'Export CSV réussi !');
     } catch (error) {
-      console.error('Erreur export CSV:', error);
+      console.error('CSV export failed:', error);
       Alert.alert('Erreur', "Impossible d'exporter en CSV");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportAsJSON = async () => {
+    setIsExporting(true);
+    try {
+      const dreams = await getDreams();
+      if (dreams.length === 0) {
+        Alert.alert('Erreur', 'Aucun rêve à exporter');
+        return;
+      }
+
+      const content = JSON.stringify({
+        exportDate: new Date().toISOString(),
+        totalDreams: dreams.length,
+        dreams: dreams
+      }, null, 2);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `journal-reves-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        if (FileSystem.documentDirectory) {
+          const fileUri = `${FileSystem.documentDirectory}journal-reves-${new Date().toISOString().split('T')[0]}.json`;
+          await FileSystem.writeAsStringAsync(fileUri, content);
+          
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri);
+          }
+        }
+
+      Alert.alert('Succès', 'Export JSON réussi !');
+    } catch (error) {
+      console.error('JSON export failed:', error);
+      Alert.alert('Erreur', "Impossible d'exporter en JSON");
     } finally {
       setIsExporting(false);
     }
@@ -553,18 +313,18 @@ export default function ExportDreams() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedCard style={styles.card}>
-        <View style={{ padding: 16 }}>
-          <Text variant="titleLarge" style={{ color: theme.text, marginBottom: 8 }}>📤 Exporter mes rêves</Text>
-          <Text variant="bodyMedium" style={{ color: theme.text }}>
+      <ThemedCard>
+        <View style={styles.content}>
+          <Text variant="titleLarge" style={{ color: theme.text, marginBottom: 8 }}>
+            📤 Exporter mes rêves
+          </Text>
+          <Text style={{ color: theme.text, marginBottom: 24 }}>
             Exportez votre journal de rêves dans différents formats pour le sauvegarder ou le partager.
           </Text>
 
-          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
-
           <View style={styles.exportOption}>
             <Text variant="titleMedium" style={{ color: theme.text }}>📄 Format PDF</Text>
-            <Text variant="bodyMedium" style={{ color: theme.text, marginBottom: 12 }}>
+            <Text style={{ color: theme.text, marginBottom: 12, fontSize: 14 }}>
               Document formaté et imprimable avec mise en page professionnelle
             </Text>
             <Button
@@ -572,20 +332,18 @@ export default function ExportDreams() {
               onPress={exportAsPDF}
               loading={isExporting}
               disabled={isExporting}
-              style={styles.button}
               icon="file-pdf-box"
               buttonColor="#E53935"
-              textColor="#FFFFFF"
             >
               Exporter en PDF
             </Button>
           </View>
 
-          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+          <Divider style={styles.divider} />
 
           <View style={styles.exportOption}>
             <Text variant="titleMedium" style={{ color: theme.text }}>📝 Format Texte</Text>
-            <Text variant="bodyMedium" style={{ color: theme.text, marginBottom: 12 }}>
+            <Text style={{ color: theme.text, marginBottom: 12, fontSize: 14 }}>
               Export lisible avec toutes les informations formatées
             </Text>
             <Button
@@ -593,39 +351,35 @@ export default function ExportDreams() {
               onPress={exportAsText}
               loading={isExporting}
               disabled={isExporting}
-              style={styles.button}
-              textColor={theme.text}
               icon="file-document"
             >
               Exporter en TXT
             </Button>
           </View>
 
-          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+          <Divider style={styles.divider} />
 
           <View style={styles.exportOption}>
-            <Text style={[styles.optionTitle, { color: theme.text }]}>📊 Format CSV</Text>
-            <Text style={[styles.optionDescription, { color: theme.text }]}>
+            <Text variant="titleMedium" style={{ color: theme.text }}>📊 Format CSV</Text>
+            <Text style={{ color: theme.text, marginBottom: 12, fontSize: 14 }}>
               Format tableur compatible Excel et Google Sheets
             </Text>
             <Button
-              mode="contained"
+              mode="outlined"
               onPress={exportAsCSV}
               loading={isExporting}
               disabled={isExporting}
-              style={styles.button}
               icon="table"
-              textColor={theme.background}
             >
               Exporter en CSV
             </Button>
           </View>
 
-          <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+          <Divider style={styles.divider} />
 
           <View style={styles.exportOption}>
-            <Text style={[styles.optionTitle, { color: theme.text }]}>💾 Format JSON</Text>
-            <Text style={[styles.optionDescription, { color: theme.text }]}>
+            <Text variant="titleMedium" style={{ color: theme.text }}>💾 Format JSON</Text>
+            <Text style={{ color: theme.text, marginBottom: 12, fontSize: 14 }}>
               Format de données brut pour développeurs et backup complet
             </Text>
             <Button
@@ -633,26 +387,11 @@ export default function ExportDreams() {
               onPress={exportAsJSON}
               loading={isExporting}
               disabled={isExporting}
-              style={styles.button}
               icon="code-braces"
-              textColor={theme.background}
             >
               Exporter en JSON
             </Button>
           </View>
-        </View>
-      </ThemedCard>
-
-      <ThemedCard style={styles.card}>
-        <View style={{ padding: 16 }}>
-          <Text style={[styles.infoTitle, { color: theme.text }]}>ℹ️ Informations</Text>
-          <Text style={[styles.infoText, { color: theme.text }]}>
-            • Les exports incluent tous vos rêves enregistrés{'\n'}
-            • Le format PDF offre la meilleure présentation pour l'impression{'\n'}
-            • Vos données restent privées et ne sont partagées que si vous le choisissez{'\n'}
-            • Les fichiers peuvent être réimportés ou consultés sur n'importe quel appareil{'\n'}
-            • Pensez à faire des sauvegardes régulières
-          </Text>
         </View>
       </ThemedCard>
     </View>
@@ -664,36 +403,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  card: {
-    marginBottom: 16,
-    borderRadius: 12,
-  },
-  divider: {
-    marginVertical: 16,
+  content: {
+    padding: 16,
   },
   exportOption: {
     marginBottom: 8,
   },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  optionDescription: {
-    fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  button: {
-    marginTop: 4,
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 22,
+  divider: {
+    marginVertical: 16,
   },
 });

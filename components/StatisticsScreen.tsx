@@ -70,34 +70,50 @@ export default function StatisticsScreen() {
       const loadDreams = async () => {
         try {
           const dreamsString = await AsyncStorage.getItem('dreamFormDataArray');
-          if (dreamsString) {
-            const loadedDreams: Dream[] = JSON.parse(dreamsString);
-            setDreams(loadedDreams);
-            calculateStats(loadedDreams);
+          if (!dreamsString) {
+            setDreams([]);
+            calculateStats([]);
+            return;
           }
+          
+          const loadedDreams: Dream[] = JSON.parse(dreamsString);
+          if (!Array.isArray(loadedDreams)) {
+            throw new Error('Invalid dreams data format');
+          }
+          
+          const validDreams = loadedDreams.filter(dream => 
+            dream && typeof dream === 'object' && dream.dreamText?.trim()
+          );
+          
+          setDreams(validDreams);
+          calculateStats(validDreams);
         } catch (error) {
-          console.error('Erreur lors du chargement des statistiques');
-          // Initialiser avec des valeurs par défaut en cas d'erreur
+          console.error('Failed to load statistics:', error);
           setDreams([]);
-          setStats({
-            total: 0,
-            lucidCount: 0,
-            lucidPercentage: 0,
-            avgIntensity: 0,
-            avgClarity: 0,
-            dreamTypes: {},
-            emotions: { before: {}, after: {} },
-            keywords: {},
-            sleepQuality: {},
-            toneDistribution: { positive: 0, neutral: 0, negative: 0 }
-          });
+          calculateStats([]);
         }
       };
       loadDreams();
     }, [])
   );
 
-  const calculateStats = (dreams: Dream[]) => {
+  const calculateStats = useCallback((dreams: Dream[]) => {
+    if (!Array.isArray(dreams) || dreams.length === 0) {
+      setStats({
+        total: 0,
+        lucidCount: 0,
+        lucidPercentage: 0,
+        avgIntensity: 0,
+        avgClarity: 0,
+        dreamTypes: {},
+        emotions: { before: {}, after: {} },
+        keywords: {},
+        sleepQuality: {},
+        toneDistribution: { positive: 0, neutral: 0, negative: 0 }
+      });
+      return;
+    }
+
     const newStats: Statistics = {
       total: dreams.length,
       lucidCount: 0,
@@ -105,10 +121,7 @@ export default function StatisticsScreen() {
       avgIntensity: 0,
       avgClarity: 0,
       dreamTypes: {},
-      emotions: {
-        before: {},
-        after: {}
-      },
+      emotions: { before: {}, after: {} },
       keywords: {},
       sleepQuality: {},
       toneDistribution: { positive: 0, neutral: 0, negative: 0 }
@@ -120,62 +133,65 @@ export default function StatisticsScreen() {
     let clarityCount = 0;
 
     dreams.forEach(dream => {
-      // Count lucid dreams
-      if (dream.isLucidDream) {
-        newStats.lucidCount++;
-      }
+      if (!dream || typeof dream !== 'object') return;
 
-      // Dream types
-      if (dream.dreamType) {
+      if (dream.isLucidDream) newStats.lucidCount++;
+
+      if (dream.dreamType && typeof dream.dreamType === 'string') {
         newStats.dreamTypes[dream.dreamType] = (newStats.dreamTypes[dream.dreamType] || 0) + 1;
       }
 
-      // Emotions before
-      dream.emotionBefore?.forEach(emotion => {
-        newStats.emotions.before[emotion] = (newStats.emotions.before[emotion] || 0) + 1;
-      });
+      if (Array.isArray(dream.emotionBefore)) {
+        dream.emotionBefore.forEach(emotion => {
+          if (typeof emotion === 'string') {
+            newStats.emotions.before[emotion] = (newStats.emotions.before[emotion] || 0) + 1;
+          }
+        });
+      }
 
-      // Emotions after
-      dream.emotionAfter?.forEach(emotion => {
-        newStats.emotions.after[emotion] = (newStats.emotions.after[emotion] || 0) + 1;
-      });
+      if (Array.isArray(dream.emotionAfter)) {
+        dream.emotionAfter.forEach(emotion => {
+          if (typeof emotion === 'string') {
+            newStats.emotions.after[emotion] = (newStats.emotions.after[emotion] || 0) + 1;
+          }
+        });
+      }
 
-      // Keywords
-      dream.keywords?.forEach(keyword => {
-        newStats.keywords[keyword] = (newStats.keywords[keyword] || 0) + 1;
-      });
+      if (Array.isArray(dream.keywords)) {
+        dream.keywords.forEach(keyword => {
+          if (typeof keyword === 'string' && keyword.trim()) {
+            newStats.keywords[keyword] = (newStats.keywords[keyword] || 0) + 1;
+          }
+        });
+      }
 
-      // Sleep quality
-      if (dream.sleepQuality) {
+      if (typeof dream.sleepQuality === 'number' && dream.sleepQuality >= 1 && dream.sleepQuality <= 10) {
         const qualityLabel = getQualityLabel(dream.sleepQuality);
         newStats.sleepQuality[qualityLabel] = (newStats.sleepQuality[qualityLabel] || 0) + 1;
       }
 
-      // Overall tone
-      if (dream.overallTone) {
+      if (dream.overallTone && typeof dream.overallTone === 'string') {
         if (dream.overallTone === 'positive') newStats.toneDistribution.positive++;
         else if (dream.overallTone === 'negative') newStats.toneDistribution.negative++;
         else newStats.toneDistribution.neutral++;
       }
 
-      // Intensity and clarity averages
-      if (dream.emotionalIntensity !== undefined) {
+      if (typeof dream.emotionalIntensity === 'number' && !isNaN(dream.emotionalIntensity)) {
         totalIntensity += dream.emotionalIntensity;
         intensityCount++;
       }
-      if (dream.clarity !== undefined) {
+      if (typeof dream.clarity === 'number' && !isNaN(dream.clarity)) {
         totalClarity += dream.clarity;
         clarityCount++;
       }
     });
 
-    // Calculate percentages and averages
     newStats.lucidPercentage = dreams.length > 0 ? (newStats.lucidCount / dreams.length) * 100 : 0;
-    newStats.avgIntensity = intensityCount > 0 ? totalIntensity / intensityCount : 0;
-    newStats.avgClarity = clarityCount > 0 ? totalClarity / clarityCount : 0;
+    newStats.avgIntensity = intensityCount > 0 ? Math.round((totalIntensity / intensityCount) * 10) / 10 : 0;
+    newStats.avgClarity = clarityCount > 0 ? Math.round((totalClarity / clarityCount) * 10) / 10 : 0;
 
     setStats(newStats);
-  };
+  }, []);
 
   const getQualityLabel = (v: number) => {
     if (v <= 2) return 'Cauchemar';
@@ -185,21 +201,27 @@ export default function StatisticsScreen() {
     return 'Beaux rêves';
   };
 
-  const renderDreamTypeStats = () => {
-    const total = dreams.length;
-    return Object.entries(stats.dreamTypes).map(([type, count]) => (
-      <View key={type} style={styles.statRow}>
-        <Text style={[styles.text, { color: theme.text }]}>{DREAM_TYPE_LABELS[type] || type}: {count}</Text>
-        <View style={styles.progressBarContainer}>
-          <ProgressBar
-            progress={total > 0 ? count / total : 0}
-            color={theme.accent}
-            style={[styles.progressBar, { backgroundColor: theme.border }]}
-          />
+  const renderDreamTypeStats = useCallback(() => {
+    const total = stats.total;
+    if (total === 0) return null;
+    
+    return Object.entries(stats.dreamTypes)
+      .sort(([, a], [, b]) => b - a)
+      .map(([type, count]) => (
+        <View key={type} style={styles.statRow}>
+          <Text style={[styles.text, { color: theme.text }]}>
+            {DREAM_TYPE_LABELS[type] || type}: {count}
+          </Text>
+          <View style={styles.progressBarContainer}>
+            <ProgressBar
+              progress={count / total}
+              color={theme.accent}
+              style={[styles.progressBar, { backgroundColor: theme.border }]}
+            />
+          </View>
         </View>
-      </View>
-    ));
-  };
+      ));
+  }, [stats.dreamTypes, stats.total, theme]);
 
   const renderEmotionStats = (emotions: { [key: string]: number }, title: string) => {
     const total = Object.values(emotions).reduce((acc, val) => acc + val, 0);

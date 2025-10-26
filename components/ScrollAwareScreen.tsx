@@ -17,36 +17,28 @@ export function ScrollAwareScreen({ children, style, contentContainerStyle }: Sc
   const lastScrollY = useRef(0);
   const isHeaderHidden = useRef(false);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const currentScrollY = event.nativeEvent.contentOffset.y;
-    const scrollDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
+  const handleScroll = React.useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    try {
+      const currentScrollY = event.nativeEvent.contentOffset.y;
+      const scrollDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
 
-    // Ne rien faire si pas de mouvement significatif
-    if (Math.abs(currentScrollY - lastScrollY.current) < 5) {
-      return;
-    }
-
-    // Masquer le header si scroll vers le bas et position > 50
-    if (scrollDirection === 'down' && currentScrollY > 50) {
-      if (!isHeaderHidden.current) {
-        navigation.setOptions({
-          headerShown: false,
-        });
-        isHeaderHidden.current = true;
+      if (Math.abs(currentScrollY - lastScrollY.current) < 5) {
+        return;
       }
-    } 
-    // Afficher le header uniquement si scroll vers le haut avec mouvement significatif
-    else if (scrollDirection === 'up' && currentScrollY < 50) {
-      if (isHeaderHidden.current) {
-        navigation.setOptions({
-          headerShown: true,
-        });
+
+      if (scrollDirection === 'down' && currentScrollY > 50 && !isHeaderHidden.current) {
+        navigation.setOptions({ headerShown: false });
+        isHeaderHidden.current = true;
+      } else if (scrollDirection === 'up' && currentScrollY < 50 && isHeaderHidden.current) {
+        navigation.setOptions({ headerShown: true });
         isHeaderHidden.current = false;
       }
-    }
 
-    lastScrollY.current = currentScrollY;
-  };
+      lastScrollY.current = currentScrollY;
+    } catch (error) {
+      console.error('Scroll handling failed');
+    }
+  }, [navigation]);
 
   return (
     <ScrollView

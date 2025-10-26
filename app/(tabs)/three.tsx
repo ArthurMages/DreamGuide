@@ -96,7 +96,12 @@ export default function TabThreeScreen() {
       });
       setAllKeywords(Array.from(keywords).sort());
     } catch (error) {
-      console.error('Erreur lors de la récupération:', error);
+      console.error('Search data fetch failed');
+      setAllDreams([]);
+      setFilteredDreams([]);
+      setAllHashtags([]);
+      setAllEmotions([]);
+      setAllKeywords([]);
     }
   };
 

@@ -29,24 +29,16 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   // Définit le thème avec validation et sauvegarde sécurisée
   setTheme: async (newTheme: ThemeType) => {
-    // Validation du thème
-    if (newTheme !== 'light' && newTheme !== 'dark') {
-      console.error('Thème invalide: valeur non autorisée');
-      return;
-    }
-    
     try {
+      if (newTheme !== 'light' && newTheme !== 'dark') {
+        throw new Error('Invalid theme value');
+      }
+      
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
       set({ theme: newTheme });
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde du thème');
-      // Tentative de récupération en cas d'erreur de sauvegarde
-      try {
-        // Vérifier si le stockage est disponible
-        await AsyncStorage.getItem('test');
-      } catch (storageError) {
-        console.error('Stockage indisponible');
-      }
+    } catch {
+      console.error('Theme update failed');
+      throw new Error('Failed to update theme');
     }
   },
 
@@ -58,9 +50,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
       set({ theme: newTheme });
-    } catch (error) {
-      console.error('Erreur lors du basculement de thème:', error);
-      // Garder le thème actuel en cas d'erreur
+    } catch {
+      console.error('Failed to toggle theme');
+      throw new Error('Failed to toggle theme');
     }
   },
 }));
