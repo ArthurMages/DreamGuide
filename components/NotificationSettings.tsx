@@ -1,9 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { Button, Divider, Switch, Text, TextInput } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { ThemedCard } from './ThemedCard';
 
@@ -144,14 +144,28 @@ export default function NotificationSettings() {
                     onValueChange={(value) => saveSettings({ ...settings, morningEnabled: value })}
                   />
                 </View>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowMorningPicker(true)}
-                  style={styles.timeButton}
-                  icon="clock-outline"
-                >
-                  {settings.morningTime}
-                </Button>
+                {settings.morningEnabled && (
+                  <View style={styles.timeRow}>
+                    <Button
+                      mode="outlined"
+                      onPress={() => setShowMorningPicker(!showMorningPicker)}
+                      style={styles.timeButton}
+                      icon="clock-outline"
+                    >
+                      {settings.morningTime}
+                    </Button>
+                    {showMorningPicker && (
+                      <View style={styles.pickerWrapper}>
+                        <DateTimePicker
+                          value={getDateFromTime(settings.morningTime)}
+                          mode="time"
+                          display="compact"
+                          onChange={(e, date) => handleTimeChange('morning', date)}
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
 
               <Divider style={styles.divider} />
@@ -164,14 +178,28 @@ export default function NotificationSettings() {
                     onValueChange={(value) => saveSettings({ ...settings, eveningEnabled: value })}
                   />
                 </View>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowEveningPicker(true)}
-                  style={styles.timeButton}
-                  icon="clock-outline"
-                >
-                  {settings.eveningTime}
-                </Button>
+                {settings.eveningEnabled && (
+                  <View style={styles.timeRow}>
+                    <Button
+                      mode="outlined"
+                      onPress={() => setShowEveningPicker(!showEveningPicker)}
+                      style={styles.timeButton}
+                      icon="clock-outline"
+                    >
+                      {settings.eveningTime}
+                    </Button>
+                    {showEveningPicker && (
+                      <View style={styles.pickerWrapper}>
+                        <DateTimePicker
+                          value={getDateFromTime(settings.eveningTime)}
+                          mode="time"
+                          display="compact"
+                          onChange={(e, date) => handleTimeChange('evening', date)}
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
 
               <Divider style={styles.divider} />
@@ -191,25 +219,7 @@ export default function NotificationSettings() {
         </View>
       </ThemedCard>
 
-      {showMorningPicker && (
-        <DateTimePicker
-          value={getDateFromTime(settings.morningTime)}
-          mode="time"
-          is24Hour
-          display="default"
-          onChange={(e, date) => handleTimeChange('morning', date)}
-        />
-      )}
 
-      {showEveningPicker && (
-        <DateTimePicker
-          value={getDateFromTime(settings.eveningTime)}
-          mode="time"
-          is24Hour
-          display="default"
-          onChange={(e, date) => handleTimeChange('evening', date)}
-        />
-      )}
     </View>
   );
 }
@@ -237,12 +247,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timeButton: {
-    marginTop: 8,
-    marginLeft: 16,
     alignSelf: 'flex-start',
   },
   divider: {
     marginVertical: 16,
   },
-
+  pickerContainer: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 8,
+    marginVertical: 8,
+    padding: 8,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginLeft: 16,
+  },
+  pickerWrapper: {
+    height: 40,
+    width: 150,
+    overflow: 'hidden',
+    marginLeft: 16,
+    paddingTop: 5,
+  },
 });
