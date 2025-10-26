@@ -1,9 +1,10 @@
-import { useAppTheme } from '../../hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Chip, SegmentedButtons, TextInput } from 'react-native-paper';
+import { ScrollAwareScreen } from '../../components/ScrollAwareScreen';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 // Interfaces locales pour la recherche
 interface Hashtag {
@@ -135,16 +136,13 @@ export default function TabThreeScreen() {
       });
     }
 
-
     if (filterType !== 'all') {
       filtered = filtered.filter(dream => dream.dreamType === filterType);
     }
 
-
     if (filterTone !== 'all') {
       filtered = filtered.filter(dream => dream.overallTone === filterTone);
     }
-
 
     if (selectedEmotions.length > 0) {
       filtered = filtered.filter(dream => {
@@ -317,7 +315,6 @@ export default function TabThreeScreen() {
       {/* Panneau de filtres (type, tonalité, émotions) */}
       {showAdvancedFilters && (
         <View style={[styles.advancedFilters, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
-
           <View style={styles.filterSection}>
             <Text style={[styles.filterLabel, { color: theme.text }]}>Type de rêve</Text>
             <SegmentedButtons
@@ -339,7 +336,6 @@ export default function TabThreeScreen() {
             />
           </View>
 
-
           <View style={styles.filterSection}>
             <Text style={[styles.filterLabel, { color: theme.text }]}>Tonalité</Text>
             <SegmentedButtons
@@ -360,7 +356,6 @@ export default function TabThreeScreen() {
               }}
             />
           </View>
-
 
           {allEmotions.length > 0 && (
             <View style={styles.emotionFilterSection}>
@@ -421,8 +416,11 @@ export default function TabThreeScreen() {
         </View>
       )}
 
-      {/* Affichage des rêves filtrés */}
-      <ScrollView style={styles.resultsContainer} contentContainerStyle={styles.resultsContent}>
+      {/* Affichage des rêves filtrés avec ScrollAwareScreen */}
+      <ScrollAwareScreen 
+        style={styles.resultsContainer} 
+        contentContainerStyle={styles.resultsContent}
+      >
         {/* Compteur de résultats */}
         {(searchQuery || filterType !== 'all' || filterTone !== 'all' || selectedEmotions.length > 0) && (
           <View style={[styles.resultHeader, { backgroundColor: theme.surface }]}>
@@ -453,7 +451,7 @@ export default function TabThreeScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </ScrollAwareScreen>
     </View>
   );
 }

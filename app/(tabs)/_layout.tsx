@@ -1,7 +1,7 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 
 import ThemeToggle from '../../components/ThemeToggle';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -36,11 +36,21 @@ export default function TabLayout() {
     tabBarInactiveTintColor: theme.text,
     headerShown: true,
     headerStyle: {
-      backgroundColor: theme.background,
+      backgroundColor: theme.accent, // Utilise la couleur d'accent pour le header
+      elevation: 4,
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
     },
-    headerTintColor: theme.text,
+    headerTintColor: theme.background, // Texte blanc/clair pour contraster avec l'accent
     headerTitleStyle: {
-      color: theme.text,
+      color: theme.background,
+      fontWeight: 'bold' as const,
+      fontSize: 20,
+      letterSpacing: 0.5,
     },
     tabBarStyle: {
       height: 60,
@@ -57,69 +67,73 @@ export default function TabLayout() {
     <>
       <StatusBar style={theme.text === '#ffffff' ? 'light' : 'dark'} />
       <Tabs screenOptions={screenOptions}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Nouveau Rêve',
-          headerTitle: 'Nouveau Rêve',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="plus-circle" color={color} focused={focused} />,
-
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Mes Rêves',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="book" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="three"
-        options={{
-          title: 'Rechercher',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="stats"
-        options={{
-          title: 'Statistiques',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="bar-chart" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="export"
-        options={{
-          title: 'Exporter',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Notifications',
-          headerRight: () => (
-            <ThemeToggle />
-          ),
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="bell" color={color} focused={focused} />,
-        }}
-      />
-    </Tabs>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: '✨ Nouveau Rêve',
+            headerTitle: '✨ Nouveau Rêve',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="plus-circle" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="two"
+          options={{
+            title: '📖 Mes Rêves',
+            headerTitle: '📖 Mes Rêves',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="book" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="three"
+          options={{
+            title: '🔍 Rechercher',
+            headerTitle: '🔍 Rechercher',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="stats"
+          options={{
+            title: '📊 Statistiques',
+            headerTitle: '📊 Statistiques',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="bar-chart" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="export"
+          options={{
+            title: '📤 Exporter',
+            headerTitle: '📤 Exporter',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: '⚙️ Notifications',
+            headerTitle: '⚙️ Notifications',
+            headerRight: () => (
+              <ThemeToggle />
+            ),
+            tabBarIcon: ({ color, focused }) => <TabBarIcon name="bell" color={color} focused={focused} />,
+          }}
+        />
+      </Tabs>
     </>
   );
 }

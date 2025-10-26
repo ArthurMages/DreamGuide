@@ -1,7 +1,7 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
 
 import ExportDreams from '../../components/ExportDreams';
+import { ScrollAwareScreen } from '../../components/ScrollAwareScreen';
 import { ThemedScreen } from '../../components/ThemedScreen';
 
 /**
@@ -11,9 +11,9 @@ import { ThemedScreen } from '../../components/ThemedScreen';
 export default function ExportScreen() {
   return (
     <ThemedScreen>
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollAwareScreen style={{ flex: 1 }}>
         <ExportDreams />
-      </ScrollView>
+      </ScrollAwareScreen>
     </ThemedScreen>
   );
 }
