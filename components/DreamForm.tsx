@@ -1,7 +1,3 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import Slider from '@react-native-community/slider';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -15,6 +11,14 @@ import {
   View
 } from 'react-native';
 import { Button, Chip, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Slider from '@react-native-community/slider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { useAppTheme } from '../hooks/useAppTheme';
+import { STORAGE_KEYS, DREAM_TYPES, EMOTIONS, SLIDER_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES, EMOTIONAL_INTENSITY_LABELS, CLARITY_LABELS } from '../constants/AppConstants';
+import { generateHashtagId, getSleepQualityLabel, getEmotionalIntensityLabel, getClarityLabel, cleanHashtags, cleanKeywords, validateDream } from '../utils/dreamUtils';
+import type { Dream, DreamType, ToneType } from '../types/Dream';
 
 const styles = StyleSheet.create({
   container: {
@@ -113,79 +117,68 @@ const styles = StyleSheet.create({
   },
 });
 
-const DREAM_TYPES = [
-  { label: '💭 Ordinaire', value: 'ordinary' },
-  { label: '✨ Lucide', value: 'lucid' },
-  { label: '😱 Cauchemar', value: 'nightmare' },
-  { label: '🔮 Prémonitoire', value: 'premonitory' },
-  { label: '🌈 Fantastique', value: 'fantasy' },
-];
+// Options pour le sélecteur de type de rêve
+const DREAM_TYPE_OPTIONS = Object.entries(DREAM_TYPES).map(([value, { icon, label }]) => ({
+  label: `${icon} ${label}`,
+  value: value as DreamType,
+}));
 
-const EMOTIONS = ['Joie', 'Tristesse', 'Peur', 'Colère', 'Anxiété', 'Paix', 'Excitation', 'Confusion', 'Amour', 'Nostalgie'];
+interface QualitySliderProps {
+  value: number;
+  onChange: (value: number) => void;
+}
 
-const findHashtagIdByLabel = async (label: string): Promise<string> => {
-  return `${label}-${Date.now()}`;
-};
-
-const qualityLabel = (v: number) => {
-  if (v <= 2) return 'Cauchemar';
-  if (v <= 4) return 'Très mauvaise';
-  if (v <= 6) return 'Moyenne';
-  if (v <= 8) return 'Bonne';
-  return 'Beaux rêves';
-};
-
-const GradientSlider: React.FC<{ value: number; onChange: (n: number) => void }> = ({ value, onChange }) => {
+// Slider avec couleur dynamique selon la valeur (rouge/orange/vert)
+const QualitySlider: React.FC<QualitySliderProps> = ({ value, onChange }) => {
   const theme = useAppTheme();
 
-  const getBackgroundColor = (value: number) => {
-    const red = '#D32F2F';
-    const orange = '#F57C00';
-    const green = '#4CAF50';
-
-    if (value <= 4) return red;
-    if (value <= 7) return orange;
-    return green;
+  const getSliderColor = (value: number): string => {
+    if (value <= 4) return '#D32F2F'; // Rouge
+    if (value <= 7) return '#F57C00'; // Orange
+    return '#4CAF50'; // Vert
   };
+
+  const sliderColor = getSliderColor(value);
 
   return (
     <View style={styles.sliderContainer}>
       <Slider
         style={styles.slider}
-        minimumValue={1}
-        maximumValue={10}
-        step={1}
+        minimumValue={SLIDER_CONFIG.MIN_VALUE}
+        maximumValue={SLIDER_CONFIG.MAX_VALUE}
+        step={SLIDER_CONFIG.STEP}
         value={value}
         onValueChange={onChange}
-        minimumTrackTintColor={getBackgroundColor(value)}
+        minimumTrackTintColor={sliderColor}
         maximumTrackTintColor={theme.border}
-        thumbTintColor={getBackgroundColor(value)}
-        tapToSeek={true}
+        thumbTintColor={sliderColor}
+        tapToSeek
       />
     </View>
   );
 };
 
+// Formulaire principal de création de rêve avec 15+ champs et validation
 export default function DreamForm() {
   const theme = useAppTheme();
 
-  // State
+  // États du formulaire - tous les champs du rêve
   const [dreamText, setDreamText] = useState('');
   const [hashtags, setHashtags] = useState<string[]>(['']);
   const [dreamDate, setDreamDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dreamType, setDreamType] = useState('');
+  const [dreamType, setDreamType] = useState<DreamType | ''>('');
   const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [emotionBefore, setEmotionBefore] = useState<string[]>([]);
   const [emotionAfter, setEmotionAfter] = useState<string[]>([]);
   const [characters, setCharacters] = useState('');
   const [location, setLocation] = useState('');
-  const [emotionalIntensity, setEmotionalIntensity] = useState('5');
-  const [clarity, setClarity] = useState('5');
-  const [keywords, setKeywords] = useState('');
-  const [sleepQuality, setSleepQuality] = useState<number>(5);
+  const [emotionalIntensity, setEmotionalIntensity] = useState(5);
+  const [clarity, setClarity] = useState(5);
+  const [keywords, setKeywords] = useState<string[]>(['']);
+  const [sleepQuality, setSleepQuality] = useState(5);
   const [personalMeaning, setPersonalMeaning] = useState('');
-  const [overallTone, setOverallTone] = useState('neutral');
+  const [overallTone, setOverallTone] = useState<ToneType>('neutral');
 
   const toggleEmotion = (emotion: string, type: 'before' | 'after') => {
     if (type === 'before') {
@@ -199,73 +192,80 @@ export default function DreamForm() {
     }
   };
 
+  // Sauvegarde du rêve avec validation et gestion d'erreurs
   const handleDreamSubmission = async () => {
-    if (!dreamText.trim()) {
-      Alert.alert('Erreur', 'Veuillez décrire votre rêve');
+    const dreamData = { dreamText };
+    
+    if (!validateDream(dreamData)) {
+      Alert.alert('Erreur', ERROR_MESSAGES.EMPTY_DREAM);
       return;
     }
 
     try {
-      const existingData = await AsyncStorage.getItem('dreamFormDataArray');
-      const formDataArray = existingData ? JSON.parse(existingData) : [];
+      const existingData = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
+      const formDataArray: Dream[] = existingData ? JSON.parse(existingData) : [];
 
-      const cleanedHashtags = hashtags.map(h => h.trim()).filter(h => h);
-      const hashtagObjs = await Promise.all(cleanedHashtags.map(async (label) => ({
-        id: await findHashtagIdByLabel(label),
+      const cleanedHashtags = cleanHashtags(hashtags);
+      const hashtagObjs = cleanedHashtags.map(label => ({
+        id: generateHashtagId(label),
         label
-      })));
+      }));
 
+      // Support ancien format hashtags pour rétrocompatibilité
       const hashtagsLegacy: any = {};
       if (hashtagObjs[0]) hashtagsLegacy.hashtag1 = hashtagObjs[0];
       if (hashtagObjs[1]) hashtagsLegacy.hashtag2 = hashtagObjs[1];
       if (hashtagObjs[2]) hashtagsLegacy.hashtag3 = hashtagObjs[2];
 
-      const selectedDreamType = dreamType || 'ordinary';
-
-      formDataArray.push({
+      const newDream: Dream = {
         dreamText,
-        isLucidDream: selectedDreamType === 'lucid',
+        isLucidDream: dreamType === 'lucid',
         todayDate: dreamDate.toISOString(),
-        hashtags: {
-          ...hashtagsLegacy,
-        },
+        hashtags: hashtagsLegacy,
         hashtagsArray: hashtagObjs,
-        dreamType: selectedDreamType,
+        dreamType: dreamType || 'ordinary',
         emotionBefore,
         emotionAfter,
         characters,
         location,
-        emotionalIntensity: parseInt(emotionalIntensity),
-        clarity: parseInt(clarity),
-        keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
+        emotionalIntensity,
+        clarity,
+        keywords: cleanKeywords(keywords.join(',')),
         sleepQuality,
         personalMeaning,
         overallTone,
         createdAt: new Date().toISOString(),
-      });
+      };
 
-      await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(formDataArray));
-      Alert.alert('Succès', 'Rêve enregistré avec succès ! 🌙');
-
-      // Reset form
-      setDreamText('');
-      setHashtags(['']);
-      setDreamDate(new Date());
-      setDreamType('ordinary');
-      setEmotionBefore([]);
-      setEmotionAfter([]);
-      setCharacters('');
-      setLocation('');
-      setEmotionalIntensity('5');
-      setClarity('5');
-      setKeywords('');
-      setSleepQuality(5);
-      setPersonalMeaning('');
-      setOverallTone('neutral');
+      formDataArray.push(newDream);
+      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(formDataArray));
+      
+      Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_SAVED);
+      resetForm();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder le rêve');
+      Alert.alert('Erreur', ERROR_MESSAGES.SAVE_ERROR);
+      // Ne pas reset le formulaire en cas d'erreur pour éviter la perte de données
+      return;
     }
+  };
+
+  // Reset complet du formulaire
+  const resetForm = () => {
+    setDreamText('');
+    setHashtags(['']);
+    setDreamDate(new Date());
+    setDreamType('');
+    setEmotionBefore([]);
+    setEmotionAfter([]);
+    setCharacters('');
+    setLocation('');
+    setEmotionalIntensity(5);
+    setClarity(5);
+    setKeywords(['']);
+    setSleepQuality(5);
+    setPersonalMeaning('');
+    setOverallTone('neutral');
   };
 
   return (
@@ -312,11 +312,10 @@ export default function DreamForm() {
               onPress={() => setTypePickerVisible(true)}
               style={[styles.typeButton, styles.fullWidthButton]}
             >
-              {dreamType ? (
-                DREAM_TYPES.find(d => d.value === dreamType)?.label
-              ) : (
-                <Text style={{ color: theme.textSecondary }}>Sélectionner le type de rêve</Text>
-              )}
+              {dreamType ? 
+                DREAM_TYPE_OPTIONS.find(d => d.value === dreamType)?.label :
+                "💭 Sélectionner le type de rêve"
+              }
             </Button>
 
             <Modal
@@ -328,7 +327,7 @@ export default function DreamForm() {
               <TouchableWithoutFeedback onPress={() => setTypePickerVisible(false)}>
                 <View style={styles.modalOverlay}>
                   <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-                    {DREAM_TYPES.map(dt => (
+                    {DREAM_TYPE_OPTIONS.map(dt => (
                       <TouchableWithoutFeedback
                         key={dt.value}
                         onPress={() => {
@@ -454,21 +453,27 @@ export default function DreamForm() {
           </View>
 
           {/* Intensité émotionnelle */}
-          <View style={[styles.section, styles.input]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>💫 Intensité émotionnelle: {emotionalIntensity}</Text>
-            <GradientSlider
-              value={(parseFloat(emotionalIntensity) || 1) / 10}
-              onChange={(value) => setEmotionalIntensity(Math.round(value * 10).toString())}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>💫 Intensité émotionnelle</Text>
+            <QualitySlider
+              value={emotionalIntensity}
+              onChange={setEmotionalIntensity}
             />
+            <Text style={[styles.qualityLabel, { color: theme.text }]}>
+              {getEmotionalIntensityLabel(emotionalIntensity)}
+            </Text>
           </View>
 
           {/* Clarté */}
-          <View style={[styles.section, styles.input]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>🔍 Clarté du rêve: {clarity}/10</Text>
-            <GradientSlider
-              value={(parseFloat(clarity) || 1) / 10}
-              onChange={(value) => setClarity(Math.round(value * 10).toString())}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🔍 Clarté du rêve</Text>
+            <QualitySlider
+              value={clarity}
+              onChange={setClarity}
             />
+            <Text style={[styles.qualityLabel, { color: theme.text }]}>
+              {getClarityLabel(clarity)}
+            </Text>
           </View>
 
           {/* Tonalité globale */}
@@ -500,38 +505,63 @@ export default function DreamForm() {
             </View>
           </View>
 
-          {/* Qualité du sommeil - Slider draggable */}
+          {/* Qualité du sommeil */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>😴 Qualité du sommeil</Text>
-            <GradientSlider
+            <QualitySlider
               value={sleepQuality}
               onChange={setSleepQuality}
             />
             <Text style={[styles.qualityLabel, { color: theme.text }]}>
-              {qualityLabel(sleepQuality)}
+              {getSleepQualityLabel(sleepQuality)}
             </Text>
           </View>
 
           {/* Mots-clés */}
           <View style={styles.section}>
-            <TextInput
-              label="🏷️ Mots-clés (séparés par des virgules)"
-              value={keywords}
-              onChangeText={setKeywords}
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🏷️ Mots-clés</Text>
+            {keywords.map((keyword, idx) => (
+              <View key={`keyword-${idx}`} style={styles.hashtagRow}>
+                <TextInput
+                  label={`Mot-clé ${idx + 1}`}
+                  value={keyword}
+                  onChangeText={(text) => {
+                    const copy = [...keywords];
+                    copy[idx] = text;
+                    setKeywords(copy);
+                  }}
+                  mode="outlined"
+                  placeholder="Ex: vol, eau, montagne..."
+                  style={[styles.input, { flex: 1 }]}
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  right={
+                    idx > 0 ? <TextInput.Icon icon="close" onPress={() => {
+                      const copy = [...keywords];
+                      copy.splice(idx, 1);
+                      setKeywords(copy.length ? copy : ['']);
+                    }} /> : undefined
+                  }
+                  theme={{
+                    colors: {
+                      background: theme.surface,
+                      onSurfaceVariant: theme.text,
+                    }
+                  }}
+                />
+              </View>
+            ))}
+
+            <Button
               mode="outlined"
-              placeholder="Ex: vol, eau, montagne, poursuite..."
-              style={styles.input}
-              outlineColor={theme.border}
-              activeOutlineColor={theme.accent}
-              textColor={theme.text}
-              placeholderTextColor={theme.textSecondary}
-              theme={{
-                colors: {
-                  background: theme.surface,
-                  onSurfaceVariant: theme.text,
-                }
-              }}
-            />
+              icon="plus"
+              onPress={() => setKeywords(prev => [...prev, ''])}
+              style={styles.addButton}
+            >
+              Ajouter un mot-clé
+            </Button>
           </View>
 
           {/* Hashtags */}

@@ -1,4 +1,4 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Card as PaperCard } from 'react-native-paper';

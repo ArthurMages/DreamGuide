@@ -1,4 +1,4 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
@@ -76,7 +76,21 @@ export default function StatisticsScreen() {
             calculateStats(loadedDreams);
           }
         } catch (error) {
-          console.error('Error loading dreams:', error);
+          console.error('Erreur lors du chargement des statistiques');
+          // Initialiser avec des valeurs par défaut en cas d'erreur
+          setDreams([]);
+          setStats({
+            total: 0,
+            lucidCount: 0,
+            lucidPercentage: 0,
+            avgIntensity: 0,
+            avgClarity: 0,
+            dreamTypes: {},
+            emotions: { before: {}, after: {} },
+            keywords: {},
+            sleepQuality: {},
+            toneDistribution: { positive: 0, neutral: 0, negative: 0 }
+          });
         }
       };
       loadDreams();

@@ -1,10 +1,11 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Chip, SegmentedButtons, TextInput } from 'react-native-paper';
 
+// Interfaces locales pour la recherche
 interface Hashtag {
   id: string;
   label: string;
@@ -41,8 +42,11 @@ const DREAM_TYPE_ICONS: { [key: string]: string } = {
   fantasy: '🌈',
 };
 
+// Écran de recherche et filtrage des rêves
 export default function TabThreeScreen() {
   const theme = useAppTheme();
+  
+  // États de recherche et données
   const [searchQuery, setSearchQuery] = useState('');
   const [allDreams, setAllDreams] = useState<Dream[]>([]);
   const [filteredDreams, setFilteredDreams] = useState<Dream[]>([]);
@@ -50,7 +54,7 @@ export default function TabThreeScreen() {
   const [allEmotions, setAllEmotions] = useState<string[]>([]);
   const [allKeywords, setAllKeywords] = useState<string[]>([]);
 
-  // Filtres avancés
+  // États des filtres avancés
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTone, setFilterTone] = useState<string>('all');
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
@@ -63,7 +67,7 @@ export default function TabThreeScreen() {
       const validDreams = dreamFormDataArray.filter(dream => dream && dream.dreamText);
       setAllDreams(validDreams);
 
-      // Extraire tous les hashtags
+      // Extraction des hashtags pour suggestions rapides
       const hashtags = new Set<string>();
       validDreams.forEach(dream => {
         if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
@@ -76,7 +80,7 @@ export default function TabThreeScreen() {
       });
       setAllHashtags(Array.from(hashtags).sort());
 
-      // Extraire toutes les émotions
+      // Extraction des émotions pour filtres
       const emotions = new Set<string>();
       validDreams.forEach(dream => {
         dream.emotionBefore?.forEach(e => emotions.add(e));
@@ -84,7 +88,7 @@ export default function TabThreeScreen() {
       });
       setAllEmotions(Array.from(emotions).sort());
 
-      // Extraire tous les mots-clés
+      // Extraction des mots-clés pour recherche
       const keywords = new Set<string>();
       validDreams.forEach(dream => {
         dream.keywords?.forEach(k => keywords.add(k));
@@ -101,11 +105,11 @@ export default function TabThreeScreen() {
     }, [])
   );
 
-  // Fonction de recherche et filtrage
+  // Moteur de recherche multi-critères
   const applyFilters = () => {
     let filtered = [...allDreams];
 
-    // Filtre par texte de recherche
+    // Recherche textuelle dans tous les champs
     if (searchQuery.trim()) {
       const searchTerm = searchQuery.toLowerCase();
       filtered = filtered.filter(dream => {
@@ -131,17 +135,17 @@ export default function TabThreeScreen() {
       });
     }
 
-    // Filtre par type de rêve
+
     if (filterType !== 'all') {
       filtered = filtered.filter(dream => dream.dreamType === filterType);
     }
 
-    // Filtre par tonalité
+
     if (filterTone !== 'all') {
       filtered = filtered.filter(dream => dream.overallTone === filterTone);
     }
 
-    // Filtre par émotions
+
     if (selectedEmotions.length > 0) {
       filtered = filtered.filter(dream => {
         const allEmotions = [...(dream.emotionBefore || []), ...(dream.emotionAfter || [])];
@@ -152,7 +156,7 @@ export default function TabThreeScreen() {
     setFilteredDreams(filtered);
   };
 
-  // Appliquer les filtres à chaque changement
+  // Application automatique des filtres
   React.useEffect(() => {
     applyFilters();
   }, [searchQuery, filterType, filterTone, selectedEmotions, allDreams]);
@@ -275,7 +279,7 @@ export default function TabThreeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Barre de recherche */}
+      {/* Interface de recherche principale */}
       <View style={[styles.searchContainer, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
         <TextInput
           label="Rechercher dans mes rêves"
@@ -310,56 +314,54 @@ export default function TabThreeScreen() {
         </Button>
       </View>
 
-      {/* Filtres avancés */}
+      {/* Panneau de filtres (type, tonalité, émotions) */}
       {showAdvancedFilters && (
         <View style={[styles.advancedFilters, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {/* Type de rêve */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.text }]}>Type de rêve</Text>
-              <SegmentedButtons
-                value={filterType}
-                onValueChange={setFilterType}
-                buttons={[
-                  { value: 'all', label: 'Tous' },
-                  { value: 'ordinary', label: '💭' },
-                  { value: 'lucid', label: '✨' },
-                  { value: 'nightmare', label: '😱' },
-                ]}
-                style={styles.segmentedButtons}
-                theme={{
-                  colors: {
-                    secondaryContainer: theme.accent,
-                    onSecondaryContainer: theme.background,
-                  }
-                }}
-              />
-            </View>
 
-            {/* Tonalité */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.text }]}>Tonalité</Text>
-              <SegmentedButtons
-                value={filterTone}
-                onValueChange={setFilterTone}
-                buttons={[
-                  { value: 'all', label: 'Toutes' },
-                  { value: 'positive', label: '😊' },
-                  { value: 'neutral', label: '😐' },
-                  { value: 'negative', label: '😔' },
-                ]}
-                style={styles.segmentedButtons}
-                theme={{
-                  colors: {
-                    secondaryContainer: theme.accent,
-                    onSecondaryContainer: theme.background,
-                  }
-                }}
-              />
-            </View>
-          </ScrollView>
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>Type de rêve</Text>
+            <SegmentedButtons
+              value={filterType}
+              onValueChange={setFilterType}
+              buttons={[
+                { value: 'all', label: 'Tous' },
+                { value: 'ordinary', label: '💭' },
+                { value: 'lucid', label: '✨' },
+                { value: 'nightmare', label: '😱' },
+              ]}
+              style={styles.segmentedButtons}
+              theme={{
+                colors: {
+                  secondaryContainer: theme.accent,
+                  onSecondaryContainer: theme.background,
+                }
+              }}
+            />
+          </View>
 
-          {/* Filtres d'émotions */}
+
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>Tonalité</Text>
+            <SegmentedButtons
+              value={filterTone}
+              onValueChange={setFilterTone}
+              buttons={[
+                { value: 'all', label: 'Toutes' },
+                { value: 'positive', label: '😊' },
+                { value: 'neutral', label: '😐' },
+                { value: 'negative', label: '😔' },
+              ]}
+              style={styles.segmentedButtons}
+              theme={{
+                colors: {
+                  secondaryContainer: theme.accent,
+                  onSecondaryContainer: theme.background,
+                }
+              }}
+            />
+          </View>
+
+
           {allEmotions.length > 0 && (
             <View style={styles.emotionFilterSection}>
               <Text style={[styles.filterLabel, { color: theme.text }]}>Émotions</Text>
@@ -395,7 +397,7 @@ export default function TabThreeScreen() {
         </View>
       )}
 
-      {/* Suggestions rapides */}
+      {/* Hashtags populaires pour recherche rapide */}
       {!searchQuery && !showAdvancedFilters && (
         <View style={[styles.suggestionsSection, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Recherches rapides :</Text>
@@ -419,9 +421,9 @@ export default function TabThreeScreen() {
         </View>
       )}
 
-      {/* Résultats */}
+      {/* Affichage des rêves filtrés */}
       <ScrollView style={styles.resultsContainer} contentContainerStyle={styles.resultsContent}>
-        {/* Indicateur de résultats */}
+        {/* Compteur de résultats */}
         {(searchQuery || filterType !== 'all' || filterTone !== 'all' || selectedEmotions.length > 0) && (
           <View style={[styles.resultHeader, { backgroundColor: theme.surface }]}>
             <Text style={[styles.resultCount, { color: theme.accent }]}>
@@ -475,8 +477,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   filterSection: {
-    marginRight: 16,
-    minWidth: 200,
+    marginBottom: 12,
   },
   filterLabel: {
     fontSize: 14,

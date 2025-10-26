@@ -1,52 +1,62 @@
-import ThemeToggle from '@/components/ThemeToggle';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs } from 'expo-router';
 import React from 'react';
+import { Tabs } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { StatusBar } from 'expo-status-bar';
 
-function TabBarIcon(props: {
+import ThemeToggle from '../../components/ThemeToggle';
+import { useAppTheme } from '../../hooks/useAppTheme';
+
+// Icône d'onglet avec état visuel focusé/non-focusé
+interface TabBarIconProps {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
   focused: boolean;
-}) {
+}
+
+function TabBarIcon({ name, color, focused }: TabBarIconProps) {
   return (
     <FontAwesome
-      size={props.focused ? 32 : 28}
+      name={name}
+      size={focused ? 32 : 28}
+      color={color}
       style={{
         marginBottom: -3,
-        opacity: props.focused ? 1 : 0.7,
+        opacity: focused ? 1 : 0.7,
       }}
-      {...props}
     />
   );
 }
 
+// Configuration principale des onglets avec thème adaptatif
 export default function TabLayout() {
   const theme = useAppTheme();
 
+  const screenOptions = {
+    tabBarActiveTintColor: theme.text,
+    tabBarInactiveTintColor: theme.text,
+    headerShown: true,
+    headerStyle: {
+      backgroundColor: theme.background,
+    },
+    headerTintColor: theme.text,
+    headerTitleStyle: {
+      color: theme.text,
+    },
+    tabBarStyle: {
+      height: 60,
+      paddingBottom: 8,
+      paddingTop: 8,
+      backgroundColor: theme.background,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    tabBarShowLabel: false,
+  };
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: theme.text,
-        tabBarInactiveTintColor: theme.text,
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: theme.background,
-        },
-        headerTintColor: theme.text,
-        headerTitleStyle: {
-          color: theme.text,
-        },
-        tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-          backgroundColor: theme.background,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-        },
-        tabBarShowLabel: false,
-      }}>
+    <>
+      <StatusBar style={theme.text === '#ffffff' ? 'light' : 'dark'} />
+      <Tabs screenOptions={screenOptions}>
       <Tabs.Screen
         name="index"
         options={{
@@ -99,6 +109,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Notifications',
+          headerRight: () => (
+            <ThemeToggle />
+          ),
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="bell" color={color} focused={focused} />,
+        }}
+      />
     </Tabs>
+    </>
   );
 }

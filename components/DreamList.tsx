@@ -1,52 +1,14 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Chip, IconButton, TextInput } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { useAppTheme } from '../hooks/useAppTheme';
 import { ThemedCard } from './ThemedCard';
-
-interface Hashtag {
-  id: string;
-  label: string;
-}
-
-interface Dream {
-  dreamText: string;
-  isLucidDream: boolean;
-  todayDate: string;
-  hashtags: {
-    hashtag1: Hashtag;
-    hashtag2: Hashtag;
-    hashtag3: Hashtag;
-  };
-  hashtagsArray?: { id: string; label: string }[];
-  dreamType?: string;
-  emotionBefore?: string[];
-  emotionAfter?: string[];
-  characters?: string;
-  location?: string;
-  emotionalIntensity?: number;
-  clarity?: number;
-  keywords?: string[];
-  sleepQuality?: string;
-  personalMeaning?: string;
-  overallTone?: string;
-}
-
-const DREAM_TYPE_ICONS: { [key: string]: string } = {
-  ordinary: '💭',
-  lucid: '✨',
-  nightmare: '😱',
-  premonitory: '🔮',
-  fantasy: '🌈',
-};
-
-const TONE_COLORS: { [key: string]: string } = {
-  positive: '#4CAF50',
-  neutral: '#9E9E9E',
-  negative: '#F44336',
-};
+import { STORAGE_KEYS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants/AppConstants';
+import { getDreamTypeIcon, getToneColor, formatShortDate, extractHashtags } from '../utils/dreamUtils';
+import type { Dream } from '../types/Dream';
 
 export default function DreamList() {
   const theme = useAppTheme();
@@ -55,24 +17,33 @@ export default function DreamList() {
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
+  // Chargement des rêves depuis AsyncStorage
   const fetchDreams = async () => {
     try {
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
       const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
-      const validDreams = dreamFormDataArray.filter(dream => dream && dream.dreamText);
+      const validDreams = dreamFormDataArray.filter(dream => dream?.dreamText?.trim());
       setDreams(validDreams);
     } catch (error) {
-      console.error('Erreur lors de la récupération:', error);
+      console.error('Erreur lors du chargement des rêves');
       setDreams([]);
+      // Notification utilisateur en cas d'erreur critique
+      Alert.alert('Erreur', 'Impossible de charger les rêves. Veuillez redémarrer l\'application.');
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
+  const memoizedFetchDreams = useCallback(() => {
+    try {
       fetchDreams();
-    }, [])
-  );
+    } catch (error) {
+      console.error('Erreur lors du chargement des rêves');
+      setDreams([]);
+    }
+  }, []);
 
+  useFocusEffect(memoizedFetchDreams);
+
+  // Suppression avec confirmation utilisateur
   const deleteDream = async (index: number) => {
     Alert.alert(
       'Supprimer le rêve',
@@ -84,15 +55,17 @@ export default function DreamList() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const data = await AsyncStorage.getItem('dreamFormDataArray');
+              const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
               const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
               dreamFormDataArray.splice(index, 1);
-              await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(dreamFormDataArray));
+              await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreamFormDataArray));
               fetchDreams();
-              Alert.alert('Succès', 'Rêve supprimé');
+              Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_DELETED);
             } catch (error) {
               console.error('Erreur lors de la suppression:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer le rêve');
+              Alert.alert('Erreur', ERROR_MESSAGES.DELETE_ERROR);
+              // Recharger les données pour s'assurer de la cohérence
+              fetchDreams();
             }
           },
         },
@@ -105,21 +78,24 @@ export default function DreamList() {
     setEditingDream({ ...dreams[index] });
   };
 
+  // Sauvegarde des modifications en mode édition
   const saveEdit = async () => {
     if (editingIndex === null || !editingDream) return;
 
     try {
-      const data = await AsyncStorage.getItem('dreamFormDataArray');
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DREAMS);
       const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
       dreamFormDataArray[editingIndex] = editingDream;
-      await AsyncStorage.setItem('dreamFormDataArray', JSON.stringify(dreamFormDataArray));
+      await AsyncStorage.setItem(STORAGE_KEYS.DREAMS, JSON.stringify(dreamFormDataArray));
       fetchDreams();
       setEditingIndex(null);
       setEditingDream(null);
-      Alert.alert('Succès', 'Rêve modifié avec succès');
+      Alert.alert('Succès', SUCCESS_MESSAGES.DREAM_UPDATED);
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
-      Alert.alert('Erreur', 'Impossible de modifier le rêve');
+      console.error('Erreur lors de la modification');
+      Alert.alert('Erreur', ERROR_MESSAGES.SAVE_ERROR);
+      // Recharger les données pour maintenir la cohérence
+      fetchDreams();
     }
   };
 
@@ -132,27 +108,24 @@ export default function DreamList() {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
+  // Rendu d'une carte de rêve avec expansion/collapse et actions
   const renderDreamCard = (dream: Dream, index: number) => {
     const isExpanded = expandedIndex === index;
-    const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
-    const toneColor = TONE_COLORS[dream.overallTone || 'neutral'];
+    const dreamIcon = getDreamTypeIcon(dream.dreamType || 'ordinary');
+    const toneColor = getToneColor(dream.overallTone || 'neutral');
     const chipTextStyle = { color: theme.text };
+    const dreamHashtags = extractHashtags(dream);
 
     return (
       <ThemedCard key={index} style={[styles.dreamCard, { borderLeftColor: toneColor, borderLeftWidth: 4 }]}>
         <View style={{ padding: 16 }}>
-          {/* En-tête */}
+          {/* En-tête: icône, date, lieu, actions */}
           <View style={styles.cardHeader}>
             <View style={styles.headerLeft}>
               <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
               <View>
                 <Text style={[styles.dreamDate, { color: theme.text }]}>
-                  {new Date(dream.todayDate).toLocaleDateString('fr-FR', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+                  {formatShortDate(dream.todayDate)}
                 </Text>
                 {dream.location && (
                   <Text style={[styles.dreamLocation, { color: theme.text }]}>📍 {dream.location}</Text>
@@ -181,12 +154,12 @@ export default function DreamList() {
             </View>
           </View>
 
-          {/* Texte du rêve */}
+          {/* Contenu principal du rêve */}
           <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={isExpanded ? undefined : 3}>
             {dream.dreamText}
           </Text>
 
-          {/* Métadonnées rapides */}
+          {/* Chips intensité/clarté */}
           <View style={styles.quickMeta}>
             {dream.emotionalIntensity && (
               <Chip icon="lightning-bolt" compact style={styles.metaChip} textStyle={chipTextStyle}>
@@ -200,10 +173,10 @@ export default function DreamList() {
             )}
           </View>
 
-          {/* Détails expandables */}
+          {/* Section détails (personnages, émotions, etc.) */}
           {isExpanded && (
             <View style={[styles.expandedContent, { borderTopColor: theme.border }]}>
-              {/* Personnages */}
+
               {dream.characters && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>👥 Personnages:</Text>
@@ -211,7 +184,7 @@ export default function DreamList() {
                 </View>
               )}
 
-              {/* Émotions avant */}
+
               {dream.emotionBefore && dream.emotionBefore.length > 0 && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>😴 Avant le rêve:</Text>
@@ -225,7 +198,7 @@ export default function DreamList() {
                 </View>
               )}
 
-              {/* Émotions après */}
+
               {dream.emotionAfter && dream.emotionAfter.length > 0 && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>😊 Après le rêve:</Text>
@@ -239,7 +212,7 @@ export default function DreamList() {
                 </View>
               )}
 
-              {/* Qualité du sommeil */}
+
               {dream.sleepQuality && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>😴 Sommeil:</Text>
@@ -247,7 +220,7 @@ export default function DreamList() {
                 </View>
               )}
 
-              {/* Mots-clés */}
+
               {dream.keywords && dream.keywords.length > 0 && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>🏷️ Mots-clés:</Text>
@@ -261,7 +234,7 @@ export default function DreamList() {
                 </View>
               )}
 
-              {/* Signification personnelle */}
+
               {dream.personalMeaning && (
                 <View style={styles.detailSection}>
                   <Text style={[styles.detailLabel, { color: theme.text }]}>💭 Signification:</Text>
@@ -271,23 +244,18 @@ export default function DreamList() {
             </View>
           )}
 
-          {/* Hashtags */}
+          {/* Hashtags en bas de carte */}
           <View style={styles.hashtagsContainer}>
-            {dream.hashtagsArray && Array.isArray(dream.hashtagsArray) ? (
-              dream.hashtagsArray.map((h, i) => h?.label ? <Chip key={`chip-${i}`} compact style={styles.hashtag} textStyle={chipTextStyle}>#{h.label}</Chip> : null)
-            ) : (
-              <>
-                {dream.hashtags?.hashtag1?.label && (
-                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag1.label}</Chip>
-                )}
-                {dream.hashtags?.hashtag2?.label && (
-                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag2.label}</Chip>
-                )}
-                {dream.hashtags?.hashtag3?.label && (
-                  <Chip compact style={styles.hashtag} textStyle={chipTextStyle}>#{dream.hashtags.hashtag3.label}</Chip>
-                )}
-              </>
-            )}
+            {dreamHashtags.map((hashtag, i) => (
+              <Chip 
+                key={`hashtag-${i}`} 
+                compact 
+                style={styles.hashtag} 
+                textStyle={chipTextStyle}
+              >
+                #{hashtag}
+              </Chip>
+            ))}
           </View>
         </View>
       </ThemedCard>
@@ -313,7 +281,7 @@ export default function DreamList() {
         )}
       </ScrollView>
 
-      {/* Modal d'édition */}
+      {/* Modal d'édition rapide des champs principaux */}
       <Modal
         visible={editingIndex !== null}
         animationType="slide"

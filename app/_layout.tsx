@@ -1,13 +1,11 @@
-import ThemeProvider from '@/components/ThemeProvider';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
-import { PaperProvider } from 'react-native-paper';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useFonts } from 'expo-font';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
 import 'react-native-reanimated';
+
+import ThemeProvider from '../components/ThemeProvider';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -15,6 +13,10 @@ export const unstable_settings = { initialRouteName: '(tabs)' };
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Layout racine de l'application
+ * Gère le chargement des polices et l'initialisation du thème
+ */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -22,12 +24,17 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur lors du chargement des polices:', error);
+      // Ne pas faire planter l'app, continuer avec les polices par défaut
+    }
   }, [error]);
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch((error) => {
+        console.error('Erreur lors de la fermeture du splash screen:', error);
+      });
     }
   }, [loaded]);
 
@@ -35,10 +42,6 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
   return (
     <ThemeProvider>
       <Stack>

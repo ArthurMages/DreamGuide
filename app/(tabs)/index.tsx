@@ -1,30 +1,13 @@
-import DreamForm from '@/components/DreamForm';
-import { View } from '@/components/Themed';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { StyleSheet } from 'react-native';
+import React from 'react';
 
-export default function TabOneScreen() {
-  const theme = useAppTheme();
+import DreamForm from '../../components/DreamForm';
+import { ThemedScreen } from '../../components/ThemedScreen';
 
+// Écran de création de nouveau rêve
+export default function NewDreamScreen() {
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ThemedScreen>
       <DreamForm />
-    </View>
+    </ThemedScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'relative',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

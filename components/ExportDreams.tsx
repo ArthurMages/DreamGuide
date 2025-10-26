@@ -1,4 +1,4 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
@@ -28,7 +28,29 @@ interface Dream {
 }
 
 const getDocumentDirectory = () => {
-  return ((FileSystem as any).documentDirectory as string) || '';
+  try {
+    return ((FileSystem as any).documentDirectory as string) || '';
+  } catch (error) {
+    console.error('Erreur accès répertoire:', error);
+    return '';
+  }
+};
+
+// Fonction pour échapper les caractères HTML
+const escapeHtml = (text: string): string => {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
+// Fonction pour nettoyer et valider les données
+const sanitizeText = (text: any): string => {
+  if (typeof text !== 'string') return '';
+  return text.slice(0, 10000); // Limite de sécurité
 };
 
 const qualityLabel = (v: number) => {
@@ -88,14 +110,14 @@ export default function ExportDreams() {
 
         <div style="margin-bottom: 20px;">
           <h3 style="color: #333; font-size: 16px; margin-bottom: 10px;">📝 Description</h3>
-          <p style="line-height: 1.6; color: #333; white-space: pre-wrap;">${dream.dreamText}</p>
+          <p style="line-height: 1.6; color: #333; white-space: pre-wrap;">${escapeHtml(sanitizeText(dream.dreamText))}</p>
         </div>
     `;
 
     if (dream.location) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>📍 Lieu:</strong> ${dream.location}</p>
+          <p style="margin: 0;"><strong>📍 Lieu:</strong> ${escapeHtml(sanitizeText(dream.location))}</p>
         </div>
       `;
     }
@@ -103,7 +125,7 @@ export default function ExportDreams() {
     if (dream.characters) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>👥 Personnages:</strong> ${dream.characters}</p>
+          <p style="margin: 0;"><strong>👥 Personnages:</strong> ${escapeHtml(sanitizeText(dream.characters))}</p>
         </div>
       `;
     }
@@ -111,7 +133,7 @@ export default function ExportDreams() {
     if (dream.emotionBefore && dream.emotionBefore.length > 0) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>😴 Émotions avant:</strong> ${dream.emotionBefore.join(', ')}</p>
+          <p style="margin: 0;"><strong>😴 Émotions avant:</strong> ${dream.emotionBefore.map(e => escapeHtml(sanitizeText(e))).join(', ')}</p>
         </div>
       `;
     }
@@ -119,7 +141,7 @@ export default function ExportDreams() {
     if (dream.emotionAfter && dream.emotionAfter.length > 0) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>😊 Émotions après:</strong> ${dream.emotionAfter.join(', ')}</p>
+          <p style="margin: 0;"><strong>😊 Émotions après:</strong> ${dream.emotionAfter.map(e => escapeHtml(sanitizeText(e))).join(', ')}</p>
         </div>
       `;
     }
@@ -159,7 +181,7 @@ export default function ExportDreams() {
     if (dream.keywords && dream.keywords.length > 0) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>🏷️ Mots-clés:</strong> ${dream.keywords.join(', ')}</p>
+          <p style="margin: 0;"><strong>🏷️ Mots-clés:</strong> ${dream.keywords.map(k => escapeHtml(sanitizeText(k))).join(', ')}</p>
         </div>
       `;
     }
@@ -167,7 +189,7 @@ export default function ExportDreams() {
     if (tagsArray.length > 0) {
       html += `
         <div style="margin-bottom: 15px;">
-          <p style="margin: 0;"><strong>#️⃣ Hashtags:</strong> ${tagsArray.map((t: string) => `#${t}`).join(' ')}</p>
+          <p style="margin: 0;"><strong>#️⃣ Hashtags:</strong> ${tagsArray.map((t: string) => `#${escapeHtml(sanitizeText(t))}`).join(' ')}</p>
         </div>
       `;
     }
@@ -176,7 +198,7 @@ export default function ExportDreams() {
       html += `
         <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px;">
           <h4 style="color: #e65100; margin: 0 0 10px 0;">💭 Signification personnelle</h4>
-          <p style="margin: 0; line-height: 1.6; white-space: pre-wrap;">${dream.personalMeaning}</p>
+          <p style="margin: 0; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(sanitizeText(dream.personalMeaning))}</p>
         </div>
       `;
     }
@@ -206,21 +228,21 @@ export default function ExportDreams() {
     };
     text += `Type: ${typeLabels[dream.dreamType || 'ordinary']}\n\n`;
 
-    text += `DESCRIPTION:\n${dream.dreamText}\n\n`;
+    text += `DESCRIPTION:\n${sanitizeText(dream.dreamText)}\n\n`;
 
     if (dream.location) {
-      text += `📍 Lieu: ${dream.location}\n`;
+      text += `📍 Lieu: ${sanitizeText(dream.location)}\n`;
     }
 
     if (dream.characters) {
-      text += `👥 Personnages: ${dream.characters}\n`;
+      text += `👥 Personnages: ${sanitizeText(dream.characters)}\n`;
     }
 
     if (dream.emotionBefore && dream.emotionBefore.length > 0) {
-      text += `😴 Émotions avant: ${dream.emotionBefore.join(', ')}\n`;
+      text += `😴 Émotions avant: ${dream.emotionBefore.map(e => sanitizeText(e)).join(', ')}\n`;
     }
     if (dream.emotionAfter && dream.emotionAfter.length > 0) {
-      text += `😊 Émotions après: ${dream.emotionAfter.join(', ')}\n`;
+      text += `😊 Émotions après: ${dream.emotionAfter.map(e => sanitizeText(e)).join(', ')}\n`;
     }
 
     if (dream.emotionalIntensity) {
@@ -244,7 +266,7 @@ export default function ExportDreams() {
     }
 
     if (dream.keywords && dream.keywords.length > 0) {
-      text += `🏷️ Mots-clés: ${dream.keywords.join(', ')}\n`;
+      text += `🏷️ Mots-clés: ${dream.keywords.map(k => sanitizeText(k)).join(', ')}\n`;
     }
 
     const tagsArray = dream.hashtagsArray && Array.isArray(dream.hashtagsArray)
@@ -256,11 +278,11 @@ export default function ExportDreams() {
       ].filter(Boolean);
 
     if (tagsArray.length > 0) {
-      text += `#️⃣ Hashtags: ${tagsArray.map((t: string) => `#${t}`).join(' ')}\n`;
+      text += `#️⃣ Hashtags: ${tagsArray.map((t: string) => `#${sanitizeText(t)}`).join(' ')}\n`;
     }
 
     if (dream.personalMeaning) {
-      text += `\n💭 SIGNIFICATION PERSONNELLE:\n${dream.personalMeaning}\n`;
+      text += `\n💭 SIGNIFICATION PERSONNELLE:\n${sanitizeText(dream.personalMeaning)}\n`;
     }
 
     return text;
@@ -276,7 +298,7 @@ export default function ExportDreams() {
     dreams.forEach(dream => {
       const date = new Date(dream.todayDate).toLocaleDateString('fr-FR');
       const type = dream.dreamType || 'ordinary';
-      const description = `"${dream.dreamText.replace(/"/g, '""')}"`;
+      const description = `"${sanitizeText(dream.dreamText).replace(/"/g, '""')}"`;
       const location = dream.location || '';
       const characters = dream.characters || '';
       const intensity = dream.emotionalIntensity || '';
@@ -397,8 +419,8 @@ export default function ExportDreams() {
 
       Alert.alert('Succès', 'Export PDF réussi ! 📄');
     } catch (error) {
-      console.error('Erreur export PDF:', error);
-      Alert.alert('Erreur', "Impossible d'exporter en PDF");
+      console.error('Erreur export PDF');
+      Alert.alert('Erreur', "Impossible d'exporter en PDF. Vérifiez l'espace de stockage disponible.");
     } finally {
       setIsExporting(false);
     }
