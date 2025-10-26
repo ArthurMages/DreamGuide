@@ -36,8 +36,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
       set({ theme: newTheme });
-    } catch {
-      console.error('Theme update failed');
+    } catch (error) {
+      console.error('Theme update failed:', error);
       throw new Error('Failed to update theme');
     }
   },
@@ -50,8 +50,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
       set({ theme: newTheme });
-    } catch {
-      console.error('Failed to toggle theme');
+    } catch (error) {
+      console.error('Failed to toggle theme:', error);
       throw new Error('Failed to toggle theme');
     }
   },

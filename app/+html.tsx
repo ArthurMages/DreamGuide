@@ -26,8 +26,8 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <body>{children}</body>
       </html>
     );
-  } catch {
-    console.error('HTML root render error');
+  } catch (error) {
+    console.error('HTML root render error:', error instanceof Error ? error.message : 'Unknown error');
     return (
       <html lang="en">
         <head>

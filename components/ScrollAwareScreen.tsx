@@ -4,8 +4,8 @@ import { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-nativ
 
 interface ScrollAwareScreenProps {
   children: React.ReactNode;
-  style?: any;
-  contentContainerStyle?: any;
+  style?: Record<string, any>;
+  contentContainerStyle?: Record<string, any>;
 }
 
 /**
@@ -36,7 +36,7 @@ export function ScrollAwareScreen({ children, style, contentContainerStyle }: Sc
 
       lastScrollY.current = currentScrollY;
     } catch (error) {
-      console.error('Scroll handling failed');
+      console.error('Scroll handling failed:', error);
     }
   }, [navigation]);
 

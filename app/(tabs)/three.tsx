@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Chip, SegmentedButtons, TextInput } from 'react-native-paper';
 import { ScrollAwareScreen } from '../../components/ScrollAwareScreen';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -61,58 +61,56 @@ export default function TabThreeScreen() {
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const fetchDreams = async () => {
+  const loadDreamsData = useCallback(async () => {
     try {
       const data = await AsyncStorage.getItem('dreamFormDataArray');
-      const dreamFormDataArray: Dream[] = data ? JSON.parse(data) : [];
-      const validDreams = dreamFormDataArray.filter(dream => dream && dream.dreamText);
+      if (!data) {
+        setAllDreams([]);
+        return;
+      }
+      
+      const dreams: Dream[] = JSON.parse(data);
+      const validDreams = dreams.filter(dream => dream?.dreamText);
       setAllDreams(validDreams);
 
-      // Extraction des hashtags pour suggestions rapides
       const hashtags = new Set<string>();
-      validDreams.forEach(dream => {
-        if (dream.hashtagsArray && Array.isArray(dream.hashtagsArray)) {
-          dream.hashtagsArray.forEach((h: any) => { if (h?.label) hashtags.add(h.label); });
-        } else {
-          if (dream.hashtags?.hashtag1?.label) hashtags.add(dream.hashtags.hashtag1.label);
-          if (dream.hashtags?.hashtag2?.label) hashtags.add(dream.hashtags.hashtag2.label);
-          if (dream.hashtags?.hashtag3?.label) hashtags.add(dream.hashtags.hashtag3.label);
-        }
-      });
-      setAllHashtags(Array.from(hashtags).sort());
-
-      // Extraction des émotions pour filtres
       const emotions = new Set<string>();
+      const keywords = new Set<string>();
+      
       validDreams.forEach(dream => {
+        if (dream.hashtagsArray?.length) {
+          dream.hashtagsArray.forEach(h => h?.label && hashtags.add(h.label));
+        } else {
+          [dream.hashtags?.hashtag1, dream.hashtags?.hashtag2, dream.hashtags?.hashtag3]
+            .forEach(h => h?.label && hashtags.add(h.label));
+        }
+        
         dream.emotionBefore?.forEach(e => emotions.add(e));
         dream.emotionAfter?.forEach(e => emotions.add(e));
-      });
-      setAllEmotions(Array.from(emotions).sort());
-
-      // Extraction des mots-clés pour recherche
-      const keywords = new Set<string>();
-      validDreams.forEach(dream => {
         dream.keywords?.forEach(k => keywords.add(k));
       });
+      
+      setAllHashtags(Array.from(hashtags).sort());
+      setAllEmotions(Array.from(emotions).sort());
       setAllKeywords(Array.from(keywords).sort());
     } catch (error) {
-      console.error('Search data fetch failed');
+      console.error('Failed to load dreams:', error instanceof Error ? error.message : String(error));
+      Alert.alert('Erreur', 'Impossible de charger les rêves');
       setAllDreams([]);
       setFilteredDreams([]);
       setAllHashtags([]);
       setAllEmotions([]);
       setAllKeywords([]);
     }
-  };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchDreams();
-    }, [])
+      loadDreamsData();
+    }, [loadDreamsData])
   );
 
-  // Moteur de recherche multi-critères
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...allDreams];
 
     // Recherche textuelle dans tous les champs
@@ -157,7 +155,7 @@ export default function TabThreeScreen() {
     }
 
     setFilteredDreams(filtered);
-  };
+  }, [allDreams, searchQuery, filterType, filterTone, selectedEmotions]);
 
   // Application automatique des filtres
   React.useEffect(() => {
@@ -177,31 +175,34 @@ export default function TabThreeScreen() {
     setSelectedEmotions([]);
   };
 
-  const renderDreamCard = (dream: Dream, index: number) => {
-    const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
+  const renderDreamCard = useCallback((dream: Dream, index: number) => {
+    try {
+      const dreamIcon = DREAM_TYPE_ICONS[dream.dreamType || 'ordinary'] || '💭';
+      const formattedDate = dream.todayDate ? 
+        new Date(dream.todayDate).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        }) : 'Date inconnue';
 
-    return (
-      <Card key={index} style={[styles.dreamCard, { backgroundColor: theme.card }]}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
-            <View style={styles.headerInfo}>
-              <Text style={[styles.dreamDate, { color: theme.text }]}>
-                {new Date(dream.todayDate).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric'
-                })}
-              </Text>
-              {dream.location && (
-                <Text style={[styles.dreamLocation, { color: theme.text }]}>📍 {dream.location}</Text>
-              )}
+      return (
+        <Card key={index} style={[styles.dreamCard, { backgroundColor: theme.card }]}>
+          <Card.Content>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.dreamIcon, { color: theme.text }]}>{dreamIcon}</Text>
+              <View style={styles.headerInfo}>
+                <Text style={[styles.dreamDate, { color: theme.text }]}>
+                  {formattedDate}
+                </Text>
+                {dream.location && (
+                  <Text style={[styles.dreamLocation, { color: theme.text }]}>📍 {dream.location}</Text>
+                )}
+              </View>
             </View>
-          </View>
 
-          <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={3}>
-            {dream.dreamText}
-          </Text>
+            <Text style={[styles.dreamText, { color: theme.text }]} numberOfLines={3}>
+              {dream.dreamText || 'Aucune description'}
+            </Text>
 
           {dream.characters && (
             <Text style={[styles.dreamMeta, { color: theme.text }]}>
@@ -278,7 +279,17 @@ export default function TabThreeScreen() {
         </Card.Content>
       </Card>
     );
-  };
+    } catch (error) {
+      console.error('Error rendering dream card:', error instanceof Error ? error.message : String(error));
+      return (
+        <Card key={index} style={[styles.dreamCard, { backgroundColor: theme.card }]}>
+          <Card.Content>
+            <Text style={{ color: theme.text }}>Erreur lors de l'affichage du rêve</Text>
+          </Card.Content>
+        </Card>
+      );
+    }
+  }, [theme]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -421,10 +432,11 @@ export default function TabThreeScreen() {
         </View>
       )}
 
-      {/* Affichage des rêves filtrés avec ScrollAwareScreen */}
-      <ScrollAwareScreen 
+      {/* Affichage des rêves filtrés */}
+      <ScrollView 
         style={styles.resultsContainer} 
         contentContainerStyle={styles.resultsContent}
+        showsVerticalScrollIndicator={true}
       >
         {/* Compteur de résultats */}
         {(searchQuery || filterType !== 'all' || filterTone !== 'all' || selectedEmotions.length > 0) && (
@@ -456,7 +468,7 @@ export default function TabThreeScreen() {
             </Text>
           </View>
         )}
-      </ScrollAwareScreen>
+      </ScrollView>
     </View>
   );
 }

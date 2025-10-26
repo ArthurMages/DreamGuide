@@ -37,6 +37,8 @@ export default function NotificationSettings() {
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
       }),
     });
     loadSettings();
@@ -50,7 +52,8 @@ export default function NotificationSettings() {
         setSettings(prev => ({ ...prev, ...parsed }));
       }
     } catch (error) {
-      console.error('Failed to load notification settings:', error);
+      console.error('Failed to load notification settings:', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert('Erreur', 'Impossible de charger les paramètres de notification');
     }
   };
 
@@ -86,7 +89,16 @@ export default function NotificationSettings() {
   };
 
   const sanitizeNotificationText = (text: string): string => {
-    return text?.replace(/[<>&"']/g, '').substring(0, 200) || '';
+    if (!text || typeof text !== 'string') return '';
+    return text
+      .replace(/[<>&"'`\\]/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+=/gi, '')
+      .replace(/data:/gi, '')
+      .replace(/vbscript:/gi, '')
+      .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+      .substring(0, 200)
+      .trim();
   };
 
   const scheduleNotifications = async (config: Settings) => {
@@ -99,14 +111,14 @@ export default function NotificationSettings() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '☀️ Bonjour !',
-            body: sanitizedText,
+            body: sanitizedText || "N'oubliez pas d'enregistrer votre rêve !",
             sound: true,
           },
           trigger: {
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any,
         });
       }
 
@@ -115,18 +127,19 @@ export default function NotificationSettings() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌙 Bonne nuit !',
-            body: sanitizedText,
+            body: sanitizedText || "N'oubliez pas d'enregistrer votre rêve !",
             sound: true,
           },
           trigger: {
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any,
         });
       }
     } catch (error) {
-      console.error('Failed to schedule notifications:', error);
+      console.error('Failed to schedule notifications:', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert('Erreur', 'Impossible de programmer les notifications');
     }
   };
 
@@ -136,16 +149,21 @@ export default function NotificationSettings() {
   };
 
   const updateTime = (type: 'morning' | 'evening', date?: Date) => {
-    setShowMorningPicker(false);
-    setShowEveningPicker(false);
-    
-    if (date) {
-      const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-      const newSettings = {
-        ...settings,
-        [type === 'morning' ? 'morningTime' : 'eveningTime']: timeString,
-      };
-      saveSettings(newSettings);
+    try {
+      setShowMorningPicker(false);
+      setShowEveningPicker(false);
+      
+      if (date) {
+        const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        const newSettings = {
+          ...settings,
+          [type === 'morning' ? 'morningTime' : 'eveningTime']: timeString,
+        };
+        saveSettings(newSettings);
+      }
+    } catch (error) {
+      console.error('Failed to update time:', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert('Erreur', 'Impossible de mettre à jour l\'heure');
     }
   };
 

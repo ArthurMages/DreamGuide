@@ -87,6 +87,7 @@ export default function TabLayout() {
             headerTitle: '🔍 Rechercher',
             headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
+            headerShown: true,
           }}
         />
         <Tabs.Screen
@@ -114,6 +115,7 @@ export default function TabLayout() {
             headerTitle: '🔔 Notifications',
             headerRight: () => <ThemeToggle />,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="cog" color={color} focused={focused} />,
+            headerShown: true,
           }}
         />
       </Tabs>

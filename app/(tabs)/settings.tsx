@@ -8,12 +8,13 @@ import { ThemedScreen } from '../../components/ThemedScreen';
 export default function SettingsScreen() {
   return (
     <ThemedScreen>
-      <ScrollAwareScreen 
+      <ScrollView 
         style={{ flex: 1 }} 
         contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={true}
       >
         <NotificationSettings />
-      </ScrollAwareScreen>
+      </ScrollView>
     </ThemedScreen>
   );
 }

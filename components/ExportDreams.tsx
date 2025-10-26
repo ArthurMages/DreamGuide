@@ -106,12 +106,20 @@ export default function ExportDreams() {
     return text;
   };
 
+  const validateDreams = async () => {
+    const dreams = await getDreams();
+    if (!dreams || dreams.length === 0) {
+      Alert.alert('Erreur', 'Aucun rêve à exporter');
+      return null;
+    }
+    return dreams;
+  };
+
   const exportAsPDF = async () => {
     setIsExporting(true);
     try {
-      const dreams = await getDreams();
-      if (!dreams || dreams.length === 0) {
-        Alert.alert('Erreur', 'Aucun rêve à exporter');
+      const dreams = await validateDreams();
+      if (!dreams) {
         setIsExporting(false);
         return;
       }
@@ -178,9 +186,9 @@ export default function ExportDreams() {
   const exportAsText = async () => {
     setIsExporting(true);
     try {
-      const dreams = await getDreams();
-      if (dreams.length === 0) {
-        Alert.alert('Erreur', 'Aucun rêve à exporter');
+      const dreams = await validateDreams();
+      if (!dreams) {
+        setIsExporting(false);
         return;
       }
 
@@ -214,16 +222,20 @@ export default function ExportDreams() {
     setIsExporting(true);
     try {
       const dreams = await getDreams();
-      if (dreams.length === 0) {
+      if (!dreams || dreams.length === 0) {
         Alert.alert('Erreur', 'Aucun rêve à exporter');
+        setIsExporting(false);
         return;
       }
 
       let csvContent = 'Date,Type,Description,Lieu,Personnages,Intensité,Clarté,Sommeil,Émotions Avant,Émotions Après,Mots-clés,Signification\n';
       
+      const sanitizeCSV = (text: string | undefined) => {
+        if (!text || typeof text !== 'string') return '';
+        return text.replace(/"/g, '""').replace(/[\r\n]/g, ' ');
+      };
+      
       dreams.forEach(dream => {
-        const sanitizeCSV = (text: string) => text ? text.replace(/"/g, '""').replace(/[\r\n]/g, ' ') : '';
-        
         const row = [
           new Date(dream.todayDate).toLocaleDateString('fr-FR'),
           sanitizeCSV(dream.dreamType || ''),
@@ -234,8 +246,8 @@ export default function ExportDreams() {
           dream.clarity || '',
           dream.sleepQuality || '',
           dream.emotionBefore?.map(e => sanitizeCSV(e)).join(';') || '',
-          dream.emotionAfter?.map(e => sanitizeCSV(e || '')).join(';') || '',
-          dream.keywords?.map(k => sanitizeCSV(k || '')).join(';') || '',
+          dream.emotionAfter?.map(e => sanitizeCSV(e)).join(';') || '',
+          dream.keywords?.map(k => sanitizeCSV(k)).join(';') || '',
           dream.personalMeaning ? `"${sanitizeCSV(dream.personalMeaning)}"` : ''
         ];
         csvContent += row.join(',') + '\n';
@@ -250,13 +262,20 @@ export default function ExportDreams() {
         link.click();
         URL.revokeObjectURL(url);
       } else {
-        if (FileSystem.documentDirectory) {
-          const fileUri = `${FileSystem.documentDirectory}journal-reves-${new Date().toISOString().split('T')[0]}.csv`;
-          await FileSystem.writeAsStringAsync(fileUri, csvContent);
+        try {
+          const docDir = (FileSystem as any).documentDirectory;
+          if (!docDir) {
+            throw new Error('Document directory not available');
+          }
+          const fileUri = `${docDir}journal-reves-${new Date().toISOString().split('T')[0]}.csv`;
+          await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: (FileSystem as any).EncodingType.UTF8 });
           
           if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(fileUri);
           }
+        } catch (fileError) {
+          console.error('File operation failed:', fileError instanceof Error ? fileError.message : 'Unknown error');
+          throw new Error('Impossible de créer le fichier CSV');
         }
       }
 
@@ -273,8 +292,9 @@ export default function ExportDreams() {
     setIsExporting(true);
     try {
       const dreams = await getDreams();
-      if (dreams.length === 0) {
+      if (!dreams || dreams.length === 0) {
         Alert.alert('Erreur', 'Aucun rêve à exporter');
+        setIsExporting(false);
         return;
       }
 
@@ -293,14 +313,22 @@ export default function ExportDreams() {
         link.click();
         URL.revokeObjectURL(url);
       } else {
-        if (FileSystem.documentDirectory) {
-          const fileUri = `${FileSystem.documentDirectory}journal-reves-${new Date().toISOString().split('T')[0]}.json`;
-          await FileSystem.writeAsStringAsync(fileUri, content);
+        try {
+          const docDir = (FileSystem as any).documentDirectory;
+          if (!docDir) {
+            throw new Error('Document directory not available');
+          }
+          const fileUri = `${docDir}journal-reves-${new Date().toISOString().split('T')[0]}.json`;
+          await FileSystem.writeAsStringAsync(fileUri, content, { encoding: (FileSystem as any).EncodingType.UTF8 });
           
           if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(fileUri);
           }
+        } catch (fileError) {
+          console.error('File operation failed:', fileError instanceof Error ? fileError.message : 'Unknown error');
+          throw new Error('Impossible de créer le fichier JSON');
         }
+      }
 
       Alert.alert('Succès', 'Export JSON réussi !');
     } catch (error) {

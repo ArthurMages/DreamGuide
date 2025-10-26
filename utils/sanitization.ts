@@ -13,8 +13,8 @@ export const sanitizeText = (text: string, maxLength = 1000): string => {
       .replace(/[<>\"'&\r\n\t]/g, '') // Remove dangerous characters
       .slice(0, maxLength)
       .trim();
-  } catch {
-    console.error('Text sanitization failed');
+  } catch (error) {
+    console.error('Text sanitization failed:', error instanceof Error ? error.message : 'Unknown error');
     return '';
   }
 };
@@ -49,8 +49,8 @@ export const isValidTimeFormat = (time: string): boolean => {
     if (typeof time !== 'string') return false;
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
-  } catch {
-    console.error('Time validation failed');
+  } catch (error) {
+    console.error('Time validation failed:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
 };
