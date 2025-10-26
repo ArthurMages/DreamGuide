@@ -1,7 +1,7 @@
 import React from 'react';
+import { ScrollView } from 'react-native';
 
 import NotificationSettings from '../../components/NotificationSettings';
-import { ScrollAwareScreen } from '../../components/ScrollAwareScreen';
 import { ThemedScreen } from '../../components/ThemedScreen';
 
 // Écran de configuration des notifications

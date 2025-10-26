@@ -1,21 +1,19 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { useAppTheme } from '../hooks/useAppTheme';
 import { useThemeStore } from '../store/themeStore';
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useThemeStore();
-  const appTheme = useAppTheme();
-
-  const icon = theme === 'dark' ? '☀️' : '🌙';
-  const buttonColor = theme === 'light' ? '#FFFFFF' : '#000000';
-  const iconColor = theme === 'light' ? '#000000' : '#FFFFFF';
+  const isDark = theme === 'dark';
+  const icon = isDark ? '☀️' : '🌙';
+  const buttonColor = isDark ? '#000000' : '#FFFFFF';
+  const iconColor = isDark ? '#FFFFFF' : '#000000';
 
   return (
     <Pressable
       style={[styles.button, { backgroundColor: buttonColor }]}
       onPress={toggleTheme}
-      accessibilityLabel={`Basculer vers le thème ${theme === 'dark' ? 'clair' : 'sombre'}`}
+      accessibilityLabel={`Basculer vers le thème ${isDark ? 'clair' : 'sombre'}`}
       accessibilityRole="button"
     >
       <Text style={[styles.icon, { color: iconColor }]}>

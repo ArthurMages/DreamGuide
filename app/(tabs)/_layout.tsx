@@ -13,14 +13,17 @@ interface TabBarIconProps {
 }
 
 function TabBarIcon({ name, color, focused }: TabBarIconProps) {
+  const iconSize = focused ? 32 : 28;
+  const iconOpacity = focused ? 1 : 0.7;
+  
   return (
     <FontAwesome
       name={name}
-      size={focused ? 32 : 28}
+      size={iconSize}
       color={color}
       style={{
         marginBottom: -3,
-        opacity: focused ? 1 : 0.7,
+        opacity: iconOpacity,
       }}
     />
   );
@@ -30,7 +33,7 @@ function TabBarIcon({ name, color, focused }: TabBarIconProps) {
 export default function TabLayout() {
   const theme = useAppTheme();
 
-  const screenOptions = {
+  const screenOptions = React.useMemo(() => ({
     tabBarActiveTintColor: theme.text,
     tabBarInactiveTintColor: theme.text,
     headerShown: true,
@@ -58,7 +61,9 @@ export default function TabLayout() {
       borderTopColor: theme.border,
     },
     tabBarShowLabel: false,
-  };
+  }), [theme.text, theme.background, theme.border]);
+
+  const renderHeaderRight = React.useCallback(() => <ThemeToggle />, []);
 
   return (
     <Tabs screenOptions={screenOptions}>
@@ -67,7 +72,7 @@ export default function TabLayout() {
           options={{
             title: '✨ Nouveau Rêve',
             headerTitle: '✨ Nouveau Rêve',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="plus-circle" color={color} focused={focused} />,
           }}
         />
@@ -76,7 +81,7 @@ export default function TabLayout() {
           options={{
             title: '📖 Mes Rêves',
             headerTitle: '📖 Mes Rêves',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="book" color={color} focused={focused} />,
           }}
         />
@@ -85,7 +90,7 @@ export default function TabLayout() {
           options={{
             title: '🔍 Rechercher',
             headerTitle: '🔍 Rechercher',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="search" color={color} focused={focused} />,
             headerShown: true,
           }}
@@ -95,7 +100,7 @@ export default function TabLayout() {
           options={{
             title: '📊 Statistiques',
             headerTitle: '📊 Statistiques',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="bar-chart" color={color} focused={focused} />,
           }}
         />
@@ -104,7 +109,7 @@ export default function TabLayout() {
           options={{
             title: '📤 Exporter',
             headerTitle: '📤 Exporter',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="share" color={color} focused={focused} />,
           }}
         />
@@ -113,7 +118,7 @@ export default function TabLayout() {
           options={{
             title: '🔔 Notifications',
             headerTitle: '🔔 Notifications',
-            headerRight: () => <ThemeToggle />,
+            headerRight: renderHeaderRight,
             tabBarIcon: ({ color, focused }) => <TabBarIcon name="cog" color={color} focused={focused} />,
             headerShown: true,
           }}

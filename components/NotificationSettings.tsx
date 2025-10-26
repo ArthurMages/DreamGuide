@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { Button, Divider, Switch, Text, TextInput } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -44,135 +44,80 @@ export default function NotificationSettings() {
     loadSettings();
   }, []);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const saved = await AsyncStorage.getItem('notificationSettings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings(prev => ({ ...prev, ...parsed }));
-      }
+      if (saved) setSettings(prev => ({ ...prev, ...JSON.parse(saved) }));
     } catch (error) {
-      console.error('Failed to load notification settings:', error instanceof Error ? error.message : 'Unknown error');
-      Alert.alert('Erreur', 'Impossible de charger les paramètres de notification');
+      console.error('Failed to load settings:', error instanceof Error ? error.message : String(error));
     }
-  };
+  }, []);
 
-  const saveSettings = async (newSettings: Settings) => {
+  const sanitizeText = useCallback((text: string): string => 
+    text?.replace(/[<>&"'`\\]|javascript:|on\w+=|data:|vbscript:|[\x00-\x1f\x7f-\x9f]/gi, '').substring(0, 200).trim() || '', []);
+
+  const scheduleNotifications = useCallback(async (config: Settings) => {
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      const body = sanitizeText(config.reminderText) || "N'oubliez pas d'enregistrer votre rêve !";
+      
+      const scheduleTime = async (time: string, title: string) => {
+        const [hour, minute] = time.split(':').map(Number);
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, sound: true },
+          trigger: { hour, minute, repeats: true } as any,
+        });
+      };
+
+      if (config.morningEnabled) await scheduleTime(config.morningTime, '☀️ Bonjour !');
+      if (config.eveningEnabled) await scheduleTime(config.eveningTime, '🌙 Bonne nuit !');
+    } catch (error) {
+      console.error('Schedule error:', error instanceof Error ? error.message : String(error));
+    }
+  }, [sanitizeText]);
+
+  const saveSettings = useCallback(async (newSettings: Settings) => {
     try {
       await AsyncStorage.setItem('notificationSettings', JSON.stringify(newSettings));
       setSettings(newSettings);
-      
-      if (newSettings.enabled) {
-        await scheduleNotifications(newSettings);
-      } else {
-        await Notifications.cancelAllScheduledNotificationsAsync();
-      }
+      await (newSettings.enabled ? scheduleNotifications(newSettings) : Notifications.cancelAllScheduledNotificationsAsync());
     } catch (error) {
-      console.error('Failed to save notification settings:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder les paramètres');
+      console.error('Failed to save settings:', error instanceof Error ? error.message : String(error));
     }
-  };
+  }, [scheduleNotifications]);
 
-  const requestPermissions = async () => {
+  const requestPermissions = useCallback(async () => {
     try {
       const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission requise', 'Activez les notifications dans les paramètres');
-        return false;
-      }
-      return true;
+      if (status !== 'granted') Alert.alert('Permission requise', 'Activez les notifications');
+      return status === 'granted';
     } catch (error) {
-      console.error('Failed to request notification permissions:', error);
-      Alert.alert('Erreur', 'Impossible de demander les permissions de notification');
+      console.error('Permission error:', error instanceof Error ? error.message : String(error));
       return false;
     }
-  };
+  }, []);
 
-  const sanitizeNotificationText = (text: string): string => {
-    if (!text || typeof text !== 'string') return '';
-    return text
-      .replace(/[<>&"'`\\]/g, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+=/gi, '')
-      .replace(/data:/gi, '')
-      .replace(/vbscript:/gi, '')
-      .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
-      .substring(0, 200)
-      .trim();
-  };
-
-  const scheduleNotifications = async (config: Settings) => {
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      const sanitizedText = sanitizeNotificationText(config.reminderText);
-
-      if (config.morningEnabled) {
-        const [hours, minutes] = config.morningTime.split(':').map(Number);
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '☀️ Bonjour !',
-            body: sanitizedText || "N'oubliez pas d'enregistrer votre rêve !",
-            sound: true,
-          },
-          trigger: {
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any,
-        });
-      }
-
-      if (config.eveningEnabled) {
-        const [hours, minutes] = config.eveningTime.split(':').map(Number);
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌙 Bonne nuit !',
-            body: sanitizedText || "N'oubliez pas d'enregistrer votre rêve !",
-            sound: true,
-          },
-          trigger: {
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to schedule notifications:', error instanceof Error ? error.message : 'Unknown error');
-      Alert.alert('Erreur', 'Impossible de programmer les notifications');
-    }
-  };
-
-  const toggleNotifications = async (value: boolean) => {
+  const toggleNotifications = useCallback(async (value: boolean) => {
     if (value && !(await requestPermissions())) return;
     await saveSettings({ ...settings, enabled: value });
-  };
+  }, [settings, requestPermissions, saveSettings]);
 
-  const updateTime = (type: 'morning' | 'evening', date?: Date) => {
-    try {
-      setShowMorningPicker(false);
-      setShowEveningPicker(false);
-      
-      if (date) {
-        const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-        const newSettings = {
-          ...settings,
-          [type === 'morning' ? 'morningTime' : 'eveningTime']: timeString,
-        };
-        saveSettings(newSettings);
-      }
-    } catch (error) {
-      console.error('Failed to update time:', error instanceof Error ? error.message : 'Unknown error');
-      Alert.alert('Erreur', 'Impossible de mettre à jour l\'heure');
+  const handleTimeChange = useCallback((type: 'morning' | 'evening', selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      type === 'morning' ? setShowMorningPicker(false) : setShowEveningPicker(false);
     }
-  };
+    if (selectedDate) {
+      const timeString = `${selectedDate.getHours().toString().padStart(2, '0')}:${selectedDate.getMinutes().toString().padStart(2, '0')}`;
+      saveSettings({ ...settings, [type === 'morning' ? 'morningTime' : 'eveningTime']: timeString });
+    }
+  }, [settings, saveSettings]);
 
-  const getDateFromTime = (timeString: string) => {
+  const getDateFromTime = useCallback((timeString: string) => {
     const [hours, minutes] = timeString.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date;
-  };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -185,12 +130,12 @@ export default function NotificationSettings() {
           
           <Divider style={styles.divider} />
           
-          <Text style={{ color: theme.text, marginBottom: 16 }}>
-            Configurez les rappels pour noter vos rêves.
-          </Text>
-
           {settings.enabled && (
             <>
+              <Text style={{ color: theme.text, marginBottom: 16 }}>
+                Configurez les rappels pour noter vos rêves.
+              </Text>
+
               <View style={styles.section}>
                 <View style={styles.row}>
                   <Text style={{ color: theme.text }}>☀️ Rappel du matin</Text>
@@ -199,15 +144,14 @@ export default function NotificationSettings() {
                     onValueChange={(value) => saveSettings({ ...settings, morningEnabled: value })}
                   />
                 </View>
-                {settings.morningEnabled && (
-                  <Button
-                    mode="outlined"
-                    onPress={() => setShowMorningPicker(true)}
-                    style={styles.timeButton}
-                  >
-                    {settings.morningTime}
-                  </Button>
-                )}
+                <Button
+                  mode="outlined"
+                  onPress={() => setShowMorningPicker(true)}
+                  style={styles.timeButton}
+                  icon="clock-outline"
+                >
+                  {settings.morningTime}
+                </Button>
               </View>
 
               <Divider style={styles.divider} />
@@ -220,15 +164,14 @@ export default function NotificationSettings() {
                     onValueChange={(value) => saveSettings({ ...settings, eveningEnabled: value })}
                   />
                 </View>
-                {settings.eveningEnabled && (
-                  <Button
-                    mode="outlined"
-                    onPress={() => setShowEveningPicker(true)}
-                    style={styles.timeButton}
-                  >
-                    {settings.eveningTime}
-                  </Button>
-                )}
+                <Button
+                  mode="outlined"
+                  onPress={() => setShowEveningPicker(true)}
+                  style={styles.timeButton}
+                  icon="clock-outline"
+                >
+                  {settings.eveningTime}
+                </Button>
               </View>
 
               <Divider style={styles.divider} />
@@ -252,8 +195,9 @@ export default function NotificationSettings() {
         <DateTimePicker
           value={getDateFromTime(settings.morningTime)}
           mode="time"
+          is24Hour
           display="default"
-          onChange={(event, date) => updateTime('morning', date)}
+          onChange={(e, date) => handleTimeChange('morning', date)}
         />
       )}
 
@@ -261,8 +205,9 @@ export default function NotificationSettings() {
         <DateTimePicker
           value={getDateFromTime(settings.eveningTime)}
           mode="time"
+          is24Hour
           display="default"
-          onChange={(event, date) => updateTime('evening', date)}
+          onChange={(e, date) => handleTimeChange('evening', date)}
         />
       )}
     </View>
@@ -292,10 +237,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timeButton: {
-    alignSelf: 'flex-start',
     marginTop: 8,
+    marginLeft: 16,
+    alignSelf: 'flex-start',
   },
   divider: {
     marginVertical: 16,
   },
+
 });
